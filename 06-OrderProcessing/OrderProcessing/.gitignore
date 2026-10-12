@@ -1,0 +1,50 @@
+# Build output
+**/bin/
+**/obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider
+.idea/
+*.sln.iml
+
+# Visual Studio Code
+.vscode/
+
+# .NET
+*.dll
+*.exe
+*.pdb
+*.cache
+*.nupkg
+
+# NuGet
+packages/
+*.nuget.props
+*.nuget.targets
+
+# Test results
+TestResults/
+*.trx
+
+# Coverage
+coverage/
+*.coverage
+*.coveragexml
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
