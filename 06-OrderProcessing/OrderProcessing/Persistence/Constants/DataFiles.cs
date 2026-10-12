@@ -1,4 +1,4 @@
-namespace OrderProcessing;
+namespace OrderProcessing.Persistence.Constants;
 
 public class DataFiles
 {
