@@ -73,8 +73,7 @@ public sealed class JsonFileStore
       }
     }
 
-    public T Read<T>(string fileName)
-      where T : new()
+    public T Read<T>(string fileName) where T : new()
     {
         string path = GetPath(fileName);
         SemaphoreSlim gate = GetLock(path);
@@ -91,7 +90,7 @@ public sealed class JsonFileStore
         }
     }
 
-    public void Write<T>(string fileName, T data)
+    public void Write<T>(string fileName, T data) where T : new()
     {
       string path = GetPath(fileName);
       SemaphoreSlim gate = GetLock(path);

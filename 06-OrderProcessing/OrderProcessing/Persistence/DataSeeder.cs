@@ -6,8 +6,11 @@ using OrderProcessing.Persistence.Constants;
 
 namespace OrderProcessing.Persistence;
 
-public class DataSeeder
+// I use primary ctor to inject the JsonFileStore 
+public class DataSeeder(JsonFileStore jsonFileStore)
 {
+    private readonly JsonFileStore _jsonFileStore = jsonFileStore;
+
     public async Task SeedCustomersAsync(CancellationToken cancellationToken = default)
     {
         List<Customer> customers =
@@ -24,16 +27,7 @@ public class DataSeeder
             new() { Id = 10, Name = "Dina Fathy", IsActive = true, LoyaltyTier = LoyaltyTier.Silver }
         ];
 
-        string dataDirectory = Path.Combine(AppContext.BaseDirectory, DataFiles.DataDir);
-
-        Directory.CreateDirectory(dataDirectory);
-
-        string filePath = Path.Combine(dataDirectory, DataFiles.Customers);
-
-        string json = JsonSerializer.Serialize(customers, JsonSerializerConfig.Options);
-
-        await File.WriteAllTextAsync(filePath, json, new UTF8Encoding(false));
-
-        Console.WriteLine($"[Seeder] customers.json - {customers.Count} records");
+        await _jsonFileStore.WriteAsync(DataFiles.Customers, customers, cancellationToken);
     }
+
 }
