@@ -1,3 +1,5 @@
+using OrderProcessing.Models.Enums;
+
 namespace OrderProcessing.Models;
 
 public class PaymentTransaction

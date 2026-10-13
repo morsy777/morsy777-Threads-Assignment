@@ -2,7 +2,7 @@ namespace OrderProcessing.Persistence.Constants;
 
 public class DataFiles
 {
-  public const string Data = "Data";
+  public const string DataDir = "Data";
   public const string Customers = "customers.json";
   public const string Products = "products.json";
   public const string Coupons = "coupons.json";
@@ -13,9 +13,9 @@ public class DataFiles
   public const string Emails = "emails.json";
   public const string EmailRetry = "email_retry.json";
 
-  public const string InvoicesDirectory = "invoices";
+  public const string InvoicesDir = "invoices";
   public const string InvoiceFilePattern = "invoice_{0}.txt";
 
-  public const string ReportsDirectory = "reports";
+  public const string ReportsDir = "reports";
   public const string ReportFilePattern = "report_{0}.json";
 }
