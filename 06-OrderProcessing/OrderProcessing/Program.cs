@@ -1,4 +1,7 @@
-﻿using System.Text;
+﻿using System.Security.AccessControl;
+using System.Text;
+using OrderProcessing;
+using OrderProcessing.Models;
 using OrderProcessing.Persistence;
 
 #region Test Email 
@@ -23,7 +26,13 @@ using OrderProcessing.Persistence;
 #endregion
 
 #region Test Seeding
-var jsonFileStore = new JsonFileStore();
-var seeder = new DataSeeder(jsonFileStore);
-await seeder.SeedAsync();
+// var jsonFileStore = new JsonFileStore();
+// var seeder = new DataSeeder(jsonFileStore);
+// await seeder.SeedAsync();
 # endregion
+
+#region Test Logging
+// Logger.Success<Customer>("Test");
+// Logger.Info<Customer>("Test");
+// Logger.Error<Customer>("Test");
+#endregion

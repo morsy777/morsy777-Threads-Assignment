@@ -14,7 +14,7 @@ public class DataSeeder(JsonFileStore jsonFileStore)
   {
     string path = Path.Combine(AppContext.BaseDirectory, DataFiles.DataDir);
 
-    if(Directory.Exists(path))
+    if (Directory.Exists(path))
       Directory.Delete(path, recursive: true);
 
     Directory.CreateDirectory(path);
