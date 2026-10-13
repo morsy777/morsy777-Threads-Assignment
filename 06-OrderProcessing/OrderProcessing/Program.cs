@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using OrderProcessing.Persistence;
 
+#region Test Email 
 // string Name = "Mohamed Morsi";
 // string EmailBuilder()
 // {
@@ -19,7 +20,10 @@ using OrderProcessing.Persistence;
 // }
 
 // Console.WriteLine(EmailBuilder());
+#endregion
 
+#region Test Seeding
 var jsonFileStore = new JsonFileStore();
 var seeder = new DataSeeder(jsonFileStore);
-await seeder.SeedCustomersAsync();
+await seeder.SeedAsync();
+# endregion

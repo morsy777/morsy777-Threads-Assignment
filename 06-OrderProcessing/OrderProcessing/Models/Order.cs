@@ -12,9 +12,9 @@ public class Order
     public decimal Discount { get; set; }
     public decimal ShippingCost { get; set; }
     public decimal TotalAmount { get; set; }
-    public OrderStatus Status { get; set; }
+    public OrderStatus Status { get; set; } 
     public DateTime CreatedAt { get; set; }
-    public string? FailureReason { get; set; }
+    public string? FailureReason { get; set; } 
     public string? TransactionId { get; set; }
 
     public Order() { }
