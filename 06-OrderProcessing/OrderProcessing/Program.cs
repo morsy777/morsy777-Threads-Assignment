@@ -3,6 +3,7 @@ using System.Text;
 using OrderProcessing;
 using OrderProcessing.Models;
 using OrderProcessing.Persistence;
+using OrderProcessing.DAL;
 
 #region Test Email 
 // string Name = "Mohamed Morsi";
@@ -34,5 +35,14 @@ using OrderProcessing.Persistence;
 #region Test Logging
 // Logger.Success<Customer>("Test");
 // Logger.Info<Customer>("Test");
-// Logger.Error<Customer>("Test");
+Logger.Error<Customer>("Test");
 #endregion
+
+var c1 = new Class1();
+c1.HI();
+
+
+
+
+
+
