@@ -2,6 +2,7 @@
 using System.Text;
 using OrderProcessing;
 using OrderProcessing.Models;
+using OrderProcessing.Models.Enums;
 using OrderProcessing.Persistence;
 using OrderProcessing.Repositories;
 
@@ -51,6 +52,39 @@ Console.WriteLine(product?.Name);
 var couponRepo = new CouponRepository();
 var coupon = await couponRepo.GetByCodeAsync("SAVE10");
 Console.WriteLine(coupon?.DiscountPercent);
+
+var orderRepo = new OrderRepository();
+var updatedOrder = new Order
+{
+  Id = 1,
+  CustomerId = 1,
+  Items =
+  [
+    new OrderItem
+    {
+      ProductId = 1,
+      Quantity = 1,
+      UnitPrice = 50
+    },
+    new OrderItem
+    {
+      ProductId = 3,
+      Quantity = 1,
+      UnitPrice = 50
+    }
+  ],
+  CouponCode = "SAVE10",
+  SubTotal = 300,
+  Discount = 30,
+  ShippingCost = 40,
+  TotalAmount = 310,
+  Status = OrderStatus.Completed,
+  CreatedAt = DateTime.Now,
+  FailureReason = null,
+  TransactionId = null
+};
+
+await orderRepo.SaveAsync(updatedOrder);
 
 
 
