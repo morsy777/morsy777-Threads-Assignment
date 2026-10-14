@@ -38,9 +38,15 @@ using OrderProcessing.Repositories;
 // Logger.Error<Customer>("Test");
 #endregion
 
-var repo = new CustomerRepository();
-var customer = await repo.GetByIdAsync(1);
+var cusomerRepo = new CustomerRepository();
+var customer = await cusomerRepo.GetByIdAsync(1);
 Console.WriteLine(customer?.Name);
+
+var productRepo = new ProductRepository();
+var product = await productRepo.GetByIdAsync(1);
+Console.WriteLine(product?.Name);
+
+Console.WriteLine(await productRepo.ReserveStockAsync(1, 5));
 
 
 
