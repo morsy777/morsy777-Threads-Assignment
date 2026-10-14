@@ -116,9 +116,9 @@ public sealed class JsonFileStore
       try
       {
         string json = await File.ReadAllTextAsync(path, Encoding.UTF8, cancellationToken);
-        
+
         // convert json into object
-        return JsonSerializer.Deserialize<T>(json, JsonSerializerConfig.Options) 
+        return JsonSerializer.Deserialize<T>(json, JsonSerializerConfig.Options)
           ?? throw new JsonException("JSON content is null.");
       }
       catch (JsonException ex)

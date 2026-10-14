@@ -1,4 +1,3 @@
 <Solution>
-  <Project Path="OrderProcessing.DAL/OrderProcessing.DAL.csproj" />
   <Project Path="OrderProcessing/OrderProcessing.csproj" />
 </Solution>
