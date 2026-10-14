@@ -46,9 +46,11 @@ var productRepo = new ProductRepository();
 var product = await productRepo.GetByIdAsync(1);
 Console.WriteLine(product?.Name);
 
-Console.WriteLine(await productRepo.ReserveStockAsync(1, 5));
+// Console.WriteLine(await productRepo.ReserveStockAsync(1, 5));
 
-
+var couponRepo = new CouponRepository();
+var coupon = await couponRepo.GetByCodeAsync("SAVE10");
+Console.WriteLine(coupon?.DiscountPercent);
 
 
 
