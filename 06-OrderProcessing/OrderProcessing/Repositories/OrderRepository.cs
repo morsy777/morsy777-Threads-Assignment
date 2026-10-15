@@ -18,10 +18,12 @@ public class OrderRepository
     if (order is null)
       return;
 
+    await Task.Delay(200, cancellationToken);
     var orders = await _jsonFileStore.ReadAsync<List<Order>>(DataFiles.Orders, cancellationToken);
 
     try
     {
+      await Task.Delay(300, cancellationToken);
       foreach (var storedOrder in orders)
       {
         cancellationToken.ThrowIfCancellationRequested();
@@ -45,19 +47,31 @@ public class OrderRepository
 
   public async Task<List<Order>> GetAllAsync(CancellationToken cancellationToken = default)
   {
+    await Task.Delay(200, cancellationToken);
     var orders = await _jsonFileStore.ReadAsync<List<Order>>(DataFiles.Orders, cancellationToken);
     return orders;
   }
 
   public async Task<List<Order>> GetByStatusAsync(OrderStatus status, CancellationToken cancellationToken = default)
   {
+    await Task.Delay(200, cancellationToken);
     var orders = await _jsonFileStore.ReadAsync<List<Order>>(DataFiles.Orders, cancellationToken);
+
     var filteredOrders = new List<Order>();
-    foreach (var order in orders)
+    try
     {
-      if (order.Status == status)
-        filteredOrders.Add(order);
+      await Task.Delay(300, cancellationToken);
+      foreach (var order in orders)
+      {
+        if (order.Status == status)
+          filteredOrders.Add(order);
+      }
     }
+    catch (OperationCanceledException)
+    {
+      Logger.Error<OrderRepository>("Loading orders was cancelled.");
+    }
+
     return filteredOrders;
   }
 

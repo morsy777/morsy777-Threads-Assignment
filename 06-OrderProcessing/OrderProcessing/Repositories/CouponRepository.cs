@@ -17,10 +17,12 @@ public class CouponRepository
     if (string.IsNullOrWhiteSpace(code))
       return default!;
 
+    await Task.Delay(200, cancellationToken);
     var coupons = await _jsonFileStore.ReadAsync<List<Coupon>>(DataFiles.Coupons, cancellationToken);
 
     try
     {
+      await Task.Delay(300, cancellationToken);
       foreach (var coupon in coupons)
       {
         cancellationToken.ThrowIfCancellationRequested();

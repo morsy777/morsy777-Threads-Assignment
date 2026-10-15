@@ -39,11 +39,13 @@ public class ProductRepository
   // the original file (product.json)
   public async Task<bool> ReserveStockAsync(int productId, int quantity, CancellationToken cancellationToken = default)
   {
+    await Task.Delay(200, cancellationToken);
     var products = await _jsonFileStore.ReadAsync<List<Product>>(DataFiles.Products, cancellationToken);
 
     Product? storedProduct = null;
     try
     {
+      await Task.Delay(300, cancellationToken);
       foreach (var product in products)
       {
         cancellationToken.ThrowIfCancellationRequested();

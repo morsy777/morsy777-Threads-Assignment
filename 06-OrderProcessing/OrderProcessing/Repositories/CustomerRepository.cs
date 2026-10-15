@@ -16,8 +16,10 @@ public class CustomerRepository
   {
     try
     {
+      await Task.Delay(200, cancellationToken);
       var customers = await _jsonFileStore.ReadAsync<List<Customer>>(DataFiles.Customers, cancellationToken);
 
+      await Task.Delay(300, cancellationToken);
       foreach (var customer in customers)
       {
         cancellationToken.ThrowIfCancellationRequested();

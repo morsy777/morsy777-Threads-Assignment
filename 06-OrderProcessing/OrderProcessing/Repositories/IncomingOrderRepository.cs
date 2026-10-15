@@ -14,6 +14,7 @@ public class IncomingOrderRepository
 
   public async Task<List<Order>> GetAllAsync(CancellationToken cancellationToken = default)
   {
+    await Task.Delay(200, cancellationToken);
     var incomingOrders = await _jsonFileStore.ReadAsync<List<Order>>(DataFiles.IncomingOrders, cancellationToken);
     return incomingOrders;
   }
