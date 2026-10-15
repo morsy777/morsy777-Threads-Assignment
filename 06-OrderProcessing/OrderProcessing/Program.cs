@@ -89,6 +89,26 @@ var updatedOrder = new Order
 var orders = await orderRepo.GetAllAsync();
 foreach (var order in orders)
 {
+  LogOrderDetails(order);
+}
+
+// var filteredOrders = await orderRepo.GetByStatusAsync(OrderStatus.Completed);
+var filteredOrders = await orderRepo.GetByStatusAsync(OrderStatus.Pending);
+foreach (var order in filteredOrders)
+{
+  LogOrderDetails(order);
+}
+
+var incomingRepo = new IncomingOrderRepository();
+var incomingOrders = await incomingRepo.GetAllAsync();
+foreach (var order in incomingOrders)
+{
+  LogOrderDetails(order);
+}
+
+static void LogOrderDetails(Order order)
+{
+  Console.WriteLine("-------------------------------------");
   Console.WriteLine($"Order: {order.Id}");
   Console.WriteLine($"Customer: {order.CustomerId}");
   foreach (var item in order.Items)
@@ -97,13 +117,4 @@ foreach (var order in orders)
       ($"Product: {item.ProductId} || Quantity: {item.Quantity} || Price: {item.UnitPrice}");
   }
 }
-
-// var filteredOrders = await orderRepo.GetByStatusAsync(OrderStatus.Completed);
-var filteredOrders = await orderRepo.GetByStatusAsync(OrderStatus.Pending);
-foreach (var order in filteredOrders)
-{
-  Console.WriteLine($"Order: {order.Id}");
-  Console.WriteLine($"Customer: {order.CustomerId}");
-}
-
 
