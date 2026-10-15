@@ -84,7 +84,26 @@ var updatedOrder = new Order
   TransactionId = null
 };
 
-await orderRepo.SaveAsync(updatedOrder);
+// await orderRepo.SaveAsync(updatedOrder);
 
+var orders = await orderRepo.GetAllAsync();
+foreach (var order in orders)
+{
+  Console.WriteLine($"Order: {order.Id}");
+  Console.WriteLine($"Customer: {order.CustomerId}");
+  foreach (var item in order.Items)
+  {
+    Console.WriteLine
+      ($"Product: {item.ProductId} || Quantity: {item.Quantity} || Price: {item.UnitPrice}");
+  }
+}
+
+// var filteredOrders = await orderRepo.GetByStatusAsync(OrderStatus.Completed);
+var filteredOrders = await orderRepo.GetByStatusAsync(OrderStatus.Pending);
+foreach (var order in filteredOrders)
+{
+  Console.WriteLine($"Order: {order.Id}");
+  Console.WriteLine($"Customer: {order.CustomerId}");
+}
 
 
