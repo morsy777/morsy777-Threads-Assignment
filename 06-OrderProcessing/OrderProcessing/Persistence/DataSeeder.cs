@@ -10,14 +10,19 @@ public class DataSeeder(JsonFileStore jsonFileStore)
 {
   private readonly JsonFileStore _jsonFileStore = jsonFileStore;
 
-  public async Task SeedAsync(CancellationToken cancellationToken = default)
+  public static async Task ResetAsync(CancellationToken cancellationToken = default)
   {
     string path = Path.Combine(AppContext.BaseDirectory, DataFiles.DataDir);
 
     if (Directory.Exists(path))
-      Directory.Delete(path, recursive: true);
+      await Task.Run(() => Directory.Delete(path, recursive: true), cancellationToken);
 
     Directory.CreateDirectory(path);
+  }
+
+  public async Task SeedAsync(CancellationToken cancellationToken = default)
+  {
+    await ResetAsync(cancellationToken);
 
     await SeedCustomersAsync(cancellationToken);
     await SeedProductsAsync(cancellationToken);

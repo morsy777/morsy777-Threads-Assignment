@@ -29,9 +29,9 @@ using OrderProcessing.Validators;
 #endregion
 
 #region Test Seeding
-// var jsonFileStore = new JsonFileStore();
-// var seeder = new DataSeeder(jsonFileStore);
-// await seeder.SeedAsync();
+var jsonFileStore = new JsonFileStore();
+var seeder = new DataSeeder(jsonFileStore);
+await seeder.SeedAsync();
 # endregion
 
 #region Test Logging
