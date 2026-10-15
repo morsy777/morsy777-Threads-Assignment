@@ -5,6 +5,7 @@ using OrderProcessing.Models;
 using OrderProcessing.Models.Enums;
 using OrderProcessing.Persistence;
 using OrderProcessing.Repositories;
+using OrderProcessing.Runners;
 using OrderProcessing.Validators;
 
 #region Test Email 
@@ -29,9 +30,9 @@ using OrderProcessing.Validators;
 #endregion
 
 #region Test Seeding
-var jsonFileStore = new JsonFileStore();
-var seeder = new DataSeeder(jsonFileStore);
-await seeder.SeedAsync();
+// var jsonFileStore = new JsonFileStore();
+// var seeder = new DataSeeder(jsonFileStore);
+// await seeder.SeedAsync();
 # endregion
 
 #region Test Logging
@@ -141,12 +142,7 @@ await TestOrder("No items", 1, null, 0, "SAVE10");
 await TestOrder("Zero quantity", 1, 1, 0, "SAVE10");
 
 
-async Task TestOrder(
-    string testName,
-    int customerId,
-    int? productId,
-    int quantity,
-    string? couponCode)
+async Task TestOrder(string testName, int customerId, int? productId, int quantity, string? couponCode)
 {
   var order = new Order
   {
@@ -162,8 +158,25 @@ async Task TestOrder(
 
   await orderValidator.ValidateOrderAsync(order);
 
-  Console.WriteLine(
-      $"{testName} => {order.Status} | {order.FailureReason ?? "None"}");
+  Console.WriteLine($"{testName} => {order.Status} | {order.FailureReason ?? "None"}");
 }
 
 #endregion
+
+Console.WriteLine("\n=================== Phase 1 Runner ===================");
+var run1 = new Phase1Runner();
+await run1.RunAsync();
+
+
+
+
+
+
+
+
+
+
+
+
+
+

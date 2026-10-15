@@ -8,11 +8,13 @@ public class OrderValidator
   private readonly CustomerRepository _customerRepository;
   private readonly ProductRepository _productRepository;
   private readonly CouponRepository _couponRepository;
+  private readonly OrderRepository _orderRepository;
   public OrderValidator()
   {
     _customerRepository = new CustomerRepository();
     _productRepository = new ProductRepository();
     _couponRepository = new CouponRepository();
+    _orderRepository = new OrderRepository();
   }
 
   public async Task ValidateOrderAsync(Order order, CancellationToken cancellationToken = default)
@@ -74,6 +76,9 @@ public class OrderValidator
     }
 
     MarkOrderAsPassed(order);
+
+    // save in order.json 
+    await _orderRepository.SaveAsync(order, cancellationToken);
   }
 
   private static void MarkOrderAsPassed(Order order)

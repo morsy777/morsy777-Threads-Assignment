@@ -10,11 +10,13 @@ public class SyncOrderValidator
   private readonly SyncCustomerRepository _syncCustomerRepository;
   private readonly SyncProductRepository _syncProductRepository;
   private readonly SyncCouponRepository _syncCouponRepository;
+  private readonly SyncOrderRepository _syncOrderRepository;
   public SyncOrderValidator()
   {
     _syncCustomerRepository = new SyncCustomerRepository();
     _syncProductRepository = new SyncProductRepository();
     _syncCouponRepository = new SyncCouponRepository();
+    _syncOrderRepository = new SyncOrderRepository();
   }
 
   public void ValidateOrder(Order order)
@@ -74,6 +76,8 @@ public class SyncOrderValidator
     }
 
     MarkOrderAsPassed(order);
+
+    _syncOrderRepository.Save(order);
   }
 
   private static void MarkOrderAsPassed(Order order)
