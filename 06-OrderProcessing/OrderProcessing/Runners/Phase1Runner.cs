@@ -4,26 +4,30 @@ using System.Diagnostics;
 using OrderProcessing.Validators;
 using OrderProcessing.Repositories;
 using OrderProcessing.Models;
+using OrderProcessing.Models.Enums;
+using OrderProcessing.Persistence.Constants;
 namespace OrderProcessing.Runners;
 
 /// <summary>
 /// The flow of RunAsync is that:
-/// Reset -> Load Incoming Orders -> Validate them async & sync -> Save them in order.json
+/// Reset -> Load Incoming Orders -> Validate them async & sync -> Save them in order.json with the new status (validated/rejected)
 /// </summary>
 
 public class Phase1Runner
 {
   private readonly JsonFileStore _jsonFileStore;
   private readonly DataSeeder _dataSeeder;
-  private readonly SyncOrderValidator _syncOrderValidator;
+  private readonly OrderRepository _orderRepository;
   private readonly IncomingOrderRepository _incomingOrderRepository;
+  private readonly SyncOrderValidator _syncOrderValidator;
   private readonly OrderValidator _orderValidator;
   public Phase1Runner()
   {
     _jsonFileStore = new JsonFileStore();
     _dataSeeder = new DataSeeder(_jsonFileStore);
-    _syncOrderValidator = new SyncOrderValidator();
+    _orderRepository = new OrderRepository();
     _incomingOrderRepository = new IncomingOrderRepository();
+    _syncOrderValidator = new SyncOrderValidator();
     _orderValidator = new OrderValidator();
   }
 
@@ -33,14 +37,40 @@ public class Phase1Runner
 
     var orders = await _incomingOrderRepository.GetAllAsync(cancellationToken);
 
-    MeasureSyncExecutionTime(orders);
+    MeasureSyncOrderValidationTime(orders);
 
-    await MeasureAsyncExecutionTime(orders, cancellationToken);
+    await MeasureAsyncOrderValidationTime(orders, cancellationToken);
   }
 
-  // In this commit, I separate the logic into two methods because
-  // I need them in PringSummary(); without the log line after seeding.
-  private void MeasureSyncExecutionTime(List<Order> orders)
+  public async Task LogSummary(CancellationToken cancellationToken = default)
+  {
+    var orders = await _orderRepository.GetAllAsync(cancellationToken);
+
+    var validOrders = await _orderRepository.GetByStatusAsync(OrderStatus.Validated, cancellationToken);
+    var rejectedOrders = await _orderRepository.GetByStatusAsync(OrderStatus.Rejected, cancellationToken);
+
+    Console.WriteLine("\n===== Validation Summary =====");
+    Console.WriteLine($"Total Orders: {orders.Count}");
+    Console.WriteLine($"Validated: {validOrders.Count}");
+    Console.WriteLine($"Rejected: {rejectedOrders.Count}");
+
+    LogRejectedOrders(rejectedOrders);
+
+    MeasureSyncOrderValidationTime(orders);
+    await MeasureAsyncOrderValidationTime(orders, cancellationToken);
+
+    Console.WriteLine($"{DataFiles.Orders} now contains {orders.Count} records.");
+  }
+
+  private static void LogRejectedOrders(List<Order> rejectedOrders)
+  {
+    foreach (var order in rejectedOrders)
+      Console.WriteLine($"- Order #{order.Id}: {order.FailureReason}");
+  }
+
+    // I separate the logic into two methods because I need them
+    // in PringSummary(); without the log line after seeding.
+  private void MeasureSyncOrderValidationTime(List<Order> orders)
   {
     var syncStopwatch = Stopwatch.StartNew();
 
@@ -53,7 +83,7 @@ public class Phase1Runner
     Console.WriteLine($"Sync run: {syncStopwatch.ElapsedMilliseconds:F2} ms");
   }
 
-  private async Task MeasureAsyncExecutionTime(List<Order> orders, CancellationToken cancellationToken)
+  private async Task MeasureAsyncOrderValidationTime(List<Order> orders, CancellationToken cancellationToken)
   {
     var asyncStopwatch = Stopwatch.StartNew();
 

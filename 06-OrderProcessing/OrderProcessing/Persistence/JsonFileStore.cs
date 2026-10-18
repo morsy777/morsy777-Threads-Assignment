@@ -30,7 +30,7 @@ public sealed class JsonFileStore
     private readonly string _dataDirectory;
 
     // Creating the Data dir path in ctor and then create it.
-    public JsonFileStore() 
+    public JsonFileStore()
     {
       _dataDirectory = Path.Combine(AppContext.BaseDirectory, DataFiles.DataDir);
 

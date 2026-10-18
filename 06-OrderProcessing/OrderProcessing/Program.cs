@@ -36,9 +36,9 @@ using OrderProcessing.Validators;
 # endregion
 
 #region Test Logging
-// Logger.Success<Customer>("Test");
-// Logger.Info<Customer>("Test");
-// Logger.Error<Customer>("Test");
+Logger.Success<Customer>("Test");
+Logger.Info<Customer>("Test");
+Logger.Error<Customer>("Test");
 #endregion
 
 var cusomerRepo = new CustomerRepository();
@@ -166,6 +166,7 @@ async Task TestOrder(string testName, int customerId, int? productId, int quanti
 Console.WriteLine("\n=================== Phase 1 Runner ===================");
 var run1 = new Phase1Runner();
 await run1.RunAsync();
+await run1.LogSummary();
 
 
 

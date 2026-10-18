@@ -24,13 +24,13 @@ public class OrderValidator
 
     if (customer is null)
     {
-      MarkOrderAsFailed(order, $" Customer #{order.CustomerId} not found");
+      await MarkOrderAsFailedAsync(order, $" Customer #{order.CustomerId} not found", cancellationToken);
       return;
     }
 
     if (!customer.IsActive)
     {
-      MarkOrderAsFailed(order, "Customer is inactive");
+      await MarkOrderAsFailedAsync(order, "Customer is inactive", cancellationToken);
       return;
     }
 
@@ -41,13 +41,13 @@ public class OrderValidator
 
       if (product is null)
       {
-        MarkOrderAsFailed(order, $" Product #{item.ProductId} not found");
+        await MarkOrderAsFailedAsync(order, $" Product #{item.ProductId} not found", cancellationToken);
         return;
       }
 
       if (product.StockQuantity < item.Quantity)
       {
-        MarkOrderAsFailed(order, $" Insufficient stock for '{product.Name}'");
+        await MarkOrderAsFailedAsync(order, $" Insufficient stock for '{product.Name}'", cancellationToken);
         return;
       }
     }
@@ -56,7 +56,7 @@ public class OrderValidator
     // but checking the existance, just validate if the coupon code is right or no.
     if (string.IsNullOrWhiteSpace(order.CouponCode))
     {
-      MarkOrderAsFailed(order, $" Coupon '{order.CouponCode}' should have a value");
+      await MarkOrderAsFailedAsync(order, $" Coupon '{order.CouponCode}' should have a value", cancellationToken);
       return;
     }
 
@@ -65,28 +65,29 @@ public class OrderValidator
 
     if (coupon is null)
     {
-      MarkOrderAsFailed(order, $" Coupon '{order.CouponCode}' does not exist");
+      await MarkOrderAsFailedAsync(order, $" Coupon '{order.CouponCode}' does not exist", cancellationToken);
       return;
     }
 
     if (coupon.ExpiryDate < DateTime.Today)
     {
-      MarkOrderAsFailed(order, $"Coupon '{coupon.Code}' has expired");
+      await MarkOrderAsFailedAsync(order, $"Coupon '{coupon.Code}' has expired", cancellationToken);
       return;
     }
 
-    MarkOrderAsPassed(order);
+    await MarkOrderAsPassedAsync(order, cancellationToken);
+  }
 
-    // save in order.json 
+  private async Task MarkOrderAsPassedAsync(Order order, CancellationToken cancellationToken)
+  {
+    order.Status = OrderStatus.Validated;
     await _orderRepository.SaveAsync(order, cancellationToken);
   }
 
-  private static void MarkOrderAsPassed(Order order)
-    => order.Status = OrderStatus.Validated;
-
-  private static void MarkOrderAsFailed(Order order, string message)
+  private async Task MarkOrderAsFailedAsync(Order order, string message, CancellationToken cancellationToken)
   {
     order.Status = OrderStatus.Rejected;
     order.FailureReason = message;
+    await _orderRepository.SaveAsync(order, cancellationToken);
   }
 }
