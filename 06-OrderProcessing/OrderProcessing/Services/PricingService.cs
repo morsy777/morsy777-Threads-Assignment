@@ -153,4 +153,26 @@ public class PricingService
     return order is not null;
   }
 
+  public async Task TestOrderPricingAsync(CancellationToken cancellationToken = default)
+  {
+      foreach (var orderId in new[] { 1, 2 })
+      {
+          var order = await _orderRepository.GetByIdAsync(orderId, cancellationToken);
+
+          if (order is null)
+          {
+              Console.WriteLine($"Order #{orderId} not found.");
+              continue;
+          }
+
+          await CalculateShippingCostAsync(order, cancellationToken);
+
+          Console.WriteLine(
+              $"Order #{order.Id} → " +
+              $"{order.SubTotal:F2} / " +
+              $"{order.Discount:F2} / " +
+              $"{order.ShippingCost:F2} / " +
+              $"{order.TotalAmount:F2}");
+      }
+  }
 }

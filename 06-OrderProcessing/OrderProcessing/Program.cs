@@ -205,12 +205,14 @@ var orderPricer = new PricingService();
 // decimal discount = await orderPricer.GetDiscountAsync(order);
 // Console.WriteLine(discount); // 9.00
 
-decimal shippngCost = await orderPricer.CalculateShippingCostAsync(order);
-Console.WriteLine(shippngCost);
-Console.WriteLine(order.TotalAmount);
-Console.WriteLine($"SubTotal: {order.SubTotal}");
-Console.WriteLine($"Discount: {order.Discount}");
-Console.WriteLine($"ShippingCost: {order.ShippingCost}");
+// decimal shippngCost = await orderPricer.CalculateShippingCostAsync(order);
+// Console.WriteLine(shippngCost);
+// Console.WriteLine(order.TotalAmount);
+// Console.WriteLine($"SubTotal: {order.SubTotal}");
+// Console.WriteLine($"Discount: {order.Discount}");
+// Console.WriteLine($"ShippingCost: {order.ShippingCost}");
+
+await orderPricer.TestOrderPricingAsync();
 #endregion
 
 
