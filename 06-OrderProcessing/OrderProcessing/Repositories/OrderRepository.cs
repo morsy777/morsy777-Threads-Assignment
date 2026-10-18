@@ -61,8 +61,11 @@ public class OrderRepository
     try
     {
       await Task.Delay(300, cancellationToken);
+
       foreach (var order in orders)
       {
+        cancellationToken.ThrowIfCancellationRequested();
+
         if (order.Status == status)
           filteredOrders.Add(order);
       }
@@ -75,6 +78,36 @@ public class OrderRepository
     return filteredOrders;
   }
 
+  // Its not required in the assingment by I added it to achinve DRY and validate oreder existance.
+  public async Task<Order?> GetByIdAsync(int orderId, CancellationToken cancellationToken = default)
+  {
+    if (orderId <= 0)
+    {
+      Logger.Error<OrderRepository>("Invalid Order Id");
+      return default;
+    }
+
+    var orders = await GetAllAsync(cancellationToken);
+
+    try
+    {
+      await Task.Delay(300, cancellationToken);
+
+      foreach (var order in orders)
+      {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (order.Id == orderId)
+          return order;
+      }
+    }
+    catch (OperationCanceledException)
+    {
+      Logger.Error<OrderRepository>($"Getting order #{orderId} was cancelled.");
+    }
+
+    return default;
+  }
 
   private static void UpdateOrder(Order storedOrder, Order order)
   {

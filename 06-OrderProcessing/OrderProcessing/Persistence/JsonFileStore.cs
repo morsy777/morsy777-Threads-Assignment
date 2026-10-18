@@ -227,7 +227,7 @@ public sealed class JsonFileStore
 
     // Get the lock of specific file or Add the file with a new SemaphoreSlim(lock, permits)
     private static SemaphoreSlim GetLock(string path) =>
-      FileLocks.GetOrAdd(Path.GetFullPath(path), _ => new SemaphoreSlim(1, 1)); 
+      FileLocks.GetOrAdd(Path.GetFullPath(path), _ => new SemaphoreSlim(1, 1));
 
     private static string GetTempPath(string path) =>
       $"{path}.{Guid.NewGuid():N}.tmp";
