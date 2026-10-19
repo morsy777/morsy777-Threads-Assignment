@@ -114,10 +114,11 @@ public class OrderPricer
     return discount;
   }
 
-  private async Task<decimal> CalculateShippingCostAsync(Order order, CancellationToken cancellationToken = default)
+  public async Task<decimal> CalculateShippingCostAsync(Order order, CancellationToken cancellationToken = default)
   {
     if (_failShippingForOrderIds.Contains(order.Id))
       throw new ShippingProviderUnavailableException("Shipping provider unavailable");
+
 
     // orderId = 6
     var discount = await GetDiscountAsync(order, cancellationToken); // 9

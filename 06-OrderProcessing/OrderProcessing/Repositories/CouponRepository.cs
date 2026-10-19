@@ -37,4 +37,14 @@ public class CouponRepository
 
     return default!;
   }
+
+  public async Task<bool> IsCouponExistAsync(string couponCode, CancellationToken cancellationToken = default)
+  {
+    if (couponCode is null)
+      return true;
+
+    var coupon = await GetByCodeAsync(couponCode, cancellationToken);
+
+    return coupon is not null;
+  }
 }

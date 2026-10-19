@@ -167,8 +167,8 @@ using OrderProcessing.Validators;
 
 #endregion
 
-Console.WriteLine("\n=================== Phase 1 Runner ===================");
-var run1 = new Phase1Runner();
+// Console.WriteLine("\n=================== Phase 1 Runner ===================");
+// var run1 = new Phase1Runner();
 // await run1.RunAsync();
 // await run1.LogSummary();
 
@@ -220,8 +220,20 @@ var order = new Order
 // await orderPricer.TestOrderPricingAsync();
 // await orderPricer.TestPricingPerformanceAsync();
 
-var race = new RaceConditionDemo();
-await race.RunAsync();
+// var race = new RaceConditionDemo();
+// await race.RunAsync();
+
+var phase2 = new Phase2Runner();
+await phase2.RunAsync();
+
+var repo = new OrderRepository();
+var orders = await repo.GetAllAsync();
+foreach (var o in orders)
+{
+  Console.WriteLine(o.Status);
+}
+
+
 
 #endregion
 

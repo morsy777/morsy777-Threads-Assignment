@@ -14,7 +14,7 @@ public class OrderProcessorV2
   {
     _productRepository = new ProductRepository();
     _orderRepository = new OrderRepository();
-    _orderPricer = new OrderPricer(new int [7]);
+    _orderPricer = new OrderPricer(new int[] {7});
     _orderValidator = new OrderValidator();
   }
 

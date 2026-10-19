@@ -54,9 +54,15 @@ public class OrderValidator
 
     // Edge case I expect it, the user may send nothing, whitespace or null.
     // but checking the existance, just validate if the coupon code is right or no.
-    if (string.IsNullOrWhiteSpace(order.CouponCode))
+    // if (string.IsNullOrWhiteSpace(order.CouponCode))
+    // {
+    //   await MarkOrderAsFailedAsync(order, $" Coupon '{order.CouponCode}' should have a value", cancellationToken);
+    //   return;
+    // }
+
+    if (order.CouponCode is null)
     {
-      await MarkOrderAsFailedAsync(order, $" Coupon '{order.CouponCode}' should have a value", cancellationToken);
+      await MarkOrderAsPassedAsync(order, cancellationToken);
       return;
     }
 
