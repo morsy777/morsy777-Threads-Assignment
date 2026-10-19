@@ -215,6 +215,11 @@ var order = new Order
 // await orderPricer.TestOrderPricingAsync();
 // await orderPricer.TestPricingPerformanceAsync();
 
+// If u need to test use the bellow because now helper functions is private
+// var orderPricer = new OrderPricer(new[] { 7 });
+// await orderPricer.TestOrderPricingAsync();
+// await orderPricer.TestPricingPerformanceAsync();
+
 var race = new RaceConditionDemo();
 await race.RunAsync();
 

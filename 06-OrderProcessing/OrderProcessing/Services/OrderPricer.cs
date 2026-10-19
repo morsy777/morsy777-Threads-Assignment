@@ -50,7 +50,7 @@ public class OrderPricer
     await _orderRepository.SaveAsync(order, cancellationToken);
   }
 
-  public async Task<decimal> CalculateSubTotalAsync(Order order, CancellationToken cancellationToken = default)
+  private async Task<decimal> CalculateSubTotalAsync(Order order, CancellationToken cancellationToken = default)
   {
     var isExists = await IsOrderExistAsync(order.Id, cancellationToken);
 
@@ -78,7 +78,7 @@ public class OrderPricer
     return subtotal;
   }
 
-  public async Task<decimal> GetDiscountAsync(Order order, CancellationToken cancellationToken = default)
+  private async Task<decimal> GetDiscountAsync(Order order, CancellationToken cancellationToken = default)
   {
     var isExists = await IsOrderExistAsync(order.Id, cancellationToken);
 
@@ -114,7 +114,7 @@ public class OrderPricer
     return discount;
   }
 
-  public async Task<decimal> CalculateShippingCostAsync(Order order, CancellationToken cancellationToken = default)
+  private async Task<decimal> CalculateShippingCostAsync(Order order, CancellationToken cancellationToken = default)
   {
     if (_failShippingForOrderIds.Contains(order.Id))
       throw new ShippingProviderUnavailableException("Shipping provider unavailable");
