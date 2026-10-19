@@ -193,7 +193,7 @@ var order = new Order
   SubTotal = 0
 };
 
-var orderPricer = new OrderPricer(new[] { 7 });
+// var orderPricer = new OrderPricer(new[] { 7 });
 
 // decimal subTotal = await orderPricer.CalculateSubTotalAsync(order);
 
@@ -213,7 +213,11 @@ var orderPricer = new OrderPricer(new[] { 7 });
 // Console.WriteLine($"ShippingCost: {order.ShippingCost}");
 
 // await orderPricer.TestOrderPricingAsync();
-await orderPricer.TestPricingPerformanceAsync();
+// await orderPricer.TestPricingPerformanceAsync();
+
+var race = new RaceConditionDemo();
+await race.RunAsync();
+
 #endregion
 
 

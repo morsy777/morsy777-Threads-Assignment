@@ -15,11 +15,12 @@ public class OrderPricer
   private readonly OrderRepository _orderRepository;
   public OrderPricer(IEnumerable<int> failShippingForOrderIds)
   {
+    _failShippingForOrderIds = failShippingForOrderIds;
+
     _customerRepository = new CustomerRepository();
     _productRepository = new ProductRepository();
     _couponRepository = new CouponRepository();
     _orderRepository = new OrderRepository();
-    _failShippingForOrderIds = failShippingForOrderIds;
   }
 
   public async Task PriceOrderAsync(Order order, CancellationToken cancellationToken = default)
@@ -174,7 +175,7 @@ public class OrderPricer
     return order is not null;
   }
 
-  //TODO: Move it to another file
+  //TODO: Move them to another file
   public async Task TestOrderPricingAsync(CancellationToken cancellationToken = default)
   {
     int[] orderIds = [1, 2];

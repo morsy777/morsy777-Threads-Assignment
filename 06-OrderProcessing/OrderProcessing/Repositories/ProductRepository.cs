@@ -1,3 +1,5 @@
+using System.Runtime.Serialization.Formatters;
+using System.Security.AccessControl;
 using OrderProcessing.Models;
 using OrderProcessing.Persistence;
 using OrderProcessing.Persistence.Constants;
@@ -9,7 +11,15 @@ public class ProductRepository
   private readonly JsonFileStore _jsonFileStore;
   public ProductRepository()
   {
-    _jsonFileStore  = new JsonFileStore();
+    _jsonFileStore = new JsonFileStore();
+  }
+
+  // don't required but I need it in RaceConditionDemo instead of loading the products there
+  public async Task<List<Product>> GetAllAsync(CancellationToken cancellationToken = default)
+  {
+    var products = await _jsonFileStore.ReadAsync<List<Product>>(DataFiles.Products, cancellationToken);
+
+    return products ?? [];
   }
 
   public async Task<Product?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
@@ -32,12 +42,103 @@ public class ProductRepository
     return default;
   }
 
+  // I use the same semaphore because the Reverse & Release, both of them 
+  // change the stock quantity, so I wanna avoid the interference between them.
+  private readonly SemaphoreSlim _stockSemaphore = new(1, 1);
 
-  // I try to reuse GetByIdAsync but it returns a product and we must 
-  // rewrite the all products after each modification because, wrtieAsync in
-  // JsonFileStore, overwrite the data, by creating a tempFile that overwrite
-  // the original file (product.json)
   public async Task<bool> ReserveStockAsync(int productId, int quantity, CancellationToken cancellationToken = default)
+  {
+    await _stockSemaphore.WaitAsync(cancellationToken);
+
+    try
+    {
+      await Task.Delay(200, cancellationToken);
+      var products = await _jsonFileStore.ReadAsync<List<Product>>(DataFiles.Products, cancellationToken);
+
+      Product? storedProduct = null;
+      try
+      {
+        await Task.Delay(300, cancellationToken);
+        foreach (var product in products)
+        {
+          cancellationToken.ThrowIfCancellationRequested();
+          if (product.Id == productId)
+          {
+            storedProduct = product;
+            break;
+          }
+        }
+      }
+      catch (OperationCanceledException)
+      {
+        Logger.Error<ProductRepository>("Product reserve was cancelled.");
+        return false;
+      }
+
+      if (storedProduct is null)
+        return false;
+
+      if (storedProduct.StockQuantity < quantity)
+        return false;
+
+      storedProduct.StockQuantity -= quantity;
+
+      await _jsonFileStore.WriteAsync(DataFiles.Products, products, cancellationToken);
+
+      return true;
+    }
+    finally
+    {
+      _stockSemaphore.Release();
+    }
+  }
+
+  public async Task<bool> ReleaseStockAsync(int productId, int quantity, CancellationToken cancellationToken = default)
+  {
+    await _stockSemaphore.WaitAsync(cancellationToken);
+
+    try
+    {
+      var products = await _jsonFileStore.ReadAsync<List<Product>>(DataFiles.Products, cancellationToken);
+
+      Product? storedProduct = null;
+      try
+      {
+        foreach (var product in products)
+        {
+          cancellationToken.ThrowIfCancellationRequested();
+          if (product.Id == productId)
+          {
+            storedProduct = product;
+            break;
+          }
+        }
+
+        if (storedProduct is null)
+          return false;
+
+        if (quantity <= 0)
+          return false;
+
+        storedProduct.StockQuantity += quantity;
+
+        await _jsonFileStore.WriteAsync(DataFiles.Products, products, cancellationToken);
+
+        return true;
+      }
+      catch (OperationCanceledException)
+      {
+        Logger.Error<ProductRepository>("Product release was cancelled.");
+        return false;
+      }
+    }
+    finally
+    {
+      _stockSemaphore.Release();
+    }
+  }
+
+  public async Task<bool> ReserveStockUnsafeAsync(int productId, int quantity, CancellationToken cancellationToken = default)
   {
     await Task.Delay(200, cancellationToken);
     var products = await _jsonFileStore.ReadAsync<List<Product>>(DataFiles.Products, cancellationToken);
@@ -68,9 +169,13 @@ public class ProductRepository
     if (storedProduct.StockQuantity < quantity)
       return false;
 
+    await Task.Delay(100, cancellationToken);
     storedProduct.StockQuantity -= quantity;
+
+    await Task.Delay(400, cancellationToken);
     await _jsonFileStore.WriteAsync(DataFiles.Products, products, cancellationToken);
 
     return true;
   }
+
 }
