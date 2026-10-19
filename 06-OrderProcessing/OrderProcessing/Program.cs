@@ -193,7 +193,7 @@ var order = new Order
   SubTotal = 0
 };
 
-var orderPricer = new PricingService();
+var orderPricer = new OrderPricer(new[] { 7 });
 
 // decimal subTotal = await orderPricer.CalculateSubTotalAsync(order);
 
@@ -212,7 +212,8 @@ var orderPricer = new PricingService();
 // Console.WriteLine($"Discount: {order.Discount}");
 // Console.WriteLine($"ShippingCost: {order.ShippingCost}");
 
-await orderPricer.TestOrderPricingAsync();
+// await orderPricer.TestOrderPricingAsync();
+await orderPricer.TestPricingPerformanceAsync();
 #endregion
 
 

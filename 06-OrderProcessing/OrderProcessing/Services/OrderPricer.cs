@@ -1,22 +1,52 @@
 using OrderProcessing.Models;
 using OrderProcessing.Models.Enums;
 using OrderProcessing.Repositories;
+using OrderProcessing.Exceptions;
+using System.Diagnostics;
 
 namespace OrderProcessing.Services;
 
-public class PricingService
+public class OrderPricer
 {
   private readonly IEnumerable<int> _failShippingForOrderIds;
   private readonly CustomerRepository _customerRepository;
   private readonly ProductRepository _productRepository;
   private readonly CouponRepository _couponRepository;
   private readonly OrderRepository _orderRepository;
-  public PricingService()
+  public OrderPricer(IEnumerable<int> failShippingForOrderIds)
   {
     _customerRepository = new CustomerRepository();
     _productRepository = new ProductRepository();
     _couponRepository = new CouponRepository();
     _orderRepository = new OrderRepository();
+    _failShippingForOrderIds = failShippingForOrderIds;
+  }
+
+  public async Task PriceOrderAsync(Order order, CancellationToken cancellationToken = default)
+  {
+    await CalculateSubTotalAsync(order, cancellationToken);
+
+    var discountTask = GetDiscountAsync(order, cancellationToken);
+    var shippingTask = CalculateShippingCostAsync(order, cancellationToken);
+
+    await Task.WhenAll(discountTask, shippingTask);
+
+    order.Discount = await discountTask;
+    order.TotalAmount = order.SubTotal - order.Discount + order.ShippingCost;
+
+    await _orderRepository.SaveAsync(order, cancellationToken);
+  }
+
+  public async Task PriceOrderSequentialAsync(Order order, CancellationToken cancellationToken = default)
+  {
+    await CalculateSubTotalAsync(order, cancellationToken);
+
+    order.Discount = await GetDiscountAsync(order, cancellationToken);
+    order.ShippingCost = await CalculateShippingCostAsync(order, cancellationToken);
+
+    order.TotalAmount = order.SubTotal - order.Discount + order.ShippingCost;
+
+    await _orderRepository.SaveAsync(order, cancellationToken);
   }
 
   public async Task<decimal> CalculateSubTotalAsync(Order order, CancellationToken cancellationToken = default)
@@ -84,7 +114,11 @@ public class PricingService
   }
 
   public async Task<decimal> CalculateShippingCostAsync(Order order, CancellationToken cancellationToken = default)
-  { // orderId = 6
+  {
+    if (_failShippingForOrderIds.Contains(order.Id))
+      throw new ShippingProviderUnavailableException("Shipping provider unavailable");
+
+    // orderId = 6
     var discount = await GetDiscountAsync(order, cancellationToken); // 9
     var subtotal = order.SubTotal; // 45
 
@@ -123,19 +157,6 @@ public class PricingService
     return shippingCost;
   }
 
-
-  // Violates OCP, I will change it.
-  // private static decimal CalculateLoyaltyDiscount(Customer customer)
-  // {
-  //   return customer.LoyaltyTier switch
-  //   {
-  //     LoyaltyTier.Bronze => 0,
-  //     LoyaltyTier.Silver => 5,
-  //     LoyaltyTier.Gold => 10,
-  //     _ => 0
-  //   };
-  // }
-
   private static readonly Dictionary<LoyaltyTier, decimal> LoyaltyDiscounts = new()
   {
     [LoyaltyTier.Bronze] = 0m,
@@ -153,26 +174,47 @@ public class PricingService
     return order is not null;
   }
 
+  //TODO: Move it to another file
   public async Task TestOrderPricingAsync(CancellationToken cancellationToken = default)
   {
-      foreach (var orderId in new[] { 1, 2 })
+    int[] orderIds = [1, 2];
+
+    foreach (var orderId in orderIds)
+    {
+      var order = await _orderRepository.GetByIdAsync(orderId, cancellationToken);
+
+      if (order is null)
       {
-          var order = await _orderRepository.GetByIdAsync(orderId, cancellationToken);
-
-          if (order is null)
-          {
-              Console.WriteLine($"Order #{orderId} not found.");
-              continue;
-          }
-
-          await CalculateShippingCostAsync(order, cancellationToken);
-
-          Console.WriteLine(
-              $"Order #{order.Id} → " +
-              $"{order.SubTotal:F2} / " +
-              $"{order.Discount:F2} / " +
-              $"{order.ShippingCost:F2} / " +
-              $"{order.TotalAmount:F2}");
+        Console.WriteLine($"Order #{orderId} not found.");
+        continue;
       }
+
+      await CalculateShippingCostAsync(order, cancellationToken);
+
+      Console.WriteLine($"Order #{order.Id} → " +
+        $"{order.SubTotal:F2} / " +
+        $"{order.Discount:F2} / " +
+        $"{order.ShippingCost:F2} / " +
+        $"{order.TotalAmount:F2}");
+    }
   }
+
+  public async Task TestPricingPerformanceAsync(CancellationToken cancellationToken = default)
+  {
+    var order = await _orderRepository.GetByIdAsync(1, cancellationToken);
+
+    if (order is null)
+      return;
+
+    var stopwatch = Stopwatch.StartNew();
+    await PriceOrderAsync(order, cancellationToken);
+    stopwatch.Stop();
+    Console.WriteLine($"Parallel: {stopwatch.ElapsedMilliseconds} ms");
+
+    stopwatch.Restart();
+    await PriceOrderSequentialAsync(order, cancellationToken);
+    stopwatch.Stop();
+    Console.WriteLine($"Sequential: {stopwatch.ElapsedMilliseconds} ms");
+  }
+
 }
