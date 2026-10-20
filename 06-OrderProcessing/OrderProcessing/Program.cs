@@ -226,12 +226,12 @@ var order = new Order
 var phase2 = new Phase2Runner();
 await phase2.RunAsync();
 
-var repo = new OrderRepository();
-var orders = await repo.GetAllAsync();
-foreach (var o in orders)
-{
-  Console.WriteLine(o.Status);
-}
+// var repo = new OrderRepository();
+// var orders = await repo.GetAllAsync();
+// foreach (var o in orders)
+// {
+//   Console.WriteLine(o.Status);
+// }
 
 
 

@@ -10,12 +10,14 @@ public class OrderProcessorV2
   private readonly OrderRepository _orderRepository;
   private readonly OrderPricer _orderPricer;
   private readonly OrderValidator _orderValidator;
+  private readonly InvoiceGenerator _invoiceGenerator;
   public OrderProcessorV2()
   {
     _productRepository = new ProductRepository();
     _orderRepository = new OrderRepository();
     _orderPricer = new OrderPricer(new int[] {7});
     _orderValidator = new OrderValidator();
+    _invoiceGenerator = new InvoiceGenerator();
   }
 
   public async Task<bool> ProcessValidatedOrderAsync(Order order, CancellationToken cancellationToken = default)
@@ -56,8 +58,8 @@ public class OrderProcessorV2
 
     await _orderPricer.PriceOrderAsync(order, cancellationToken);
 
-    // TODO: (Task 8.5).
-    // await _invoiceGenerator.GenerateAsync(order); 
+    // Task 8.5: CPU-bound invoice generation
+    await _invoiceGenerator.GenerateAsync(order, cancellationToken);
 
     order.Status = OrderStatus.Completed;
     await _orderRepository.SaveAsync(order, cancellationToken);

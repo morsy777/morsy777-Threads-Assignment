@@ -172,7 +172,18 @@ public sealed class JsonFileStore
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        File.Move(tempPath, path, overwrite: true);
+        for (int retry = 0; retry < 5; retry++)
+        {
+          try
+          {
+            File.Move(tempPath, path, overwrite: true);
+            break;
+          }
+          catch (Exception) when (retry < 4)
+          {
+            await Task.Delay(50, cancellationToken);
+          }
+        }
       }
       finally
       {
@@ -202,7 +213,18 @@ public sealed class JsonFileStore
           stream.Flush(flushToDisk: true);
         }
 
-        File.Move(tempPath, path, overwrite: true);
+        for (int retry = 0; retry < 5; retry++)
+        {
+          try
+          {
+            File.Move(tempPath, path, overwrite: true);
+            break;
+          }
+          catch (Exception) when (retry < 4)
+          {
+            Thread.Sleep(50);
+          }
+        }
       }
       finally
       {
