@@ -50,7 +50,7 @@ public class OrderPricer
     await _orderRepository.SaveAsync(order, cancellationToken);
   }
 
-  private async Task<decimal> CalculateSubTotalAsync(Order order, CancellationToken cancellationToken = default)
+  public async Task<decimal> CalculateSubTotalAsync(Order order, CancellationToken cancellationToken = default)
   {
     var isExists = await IsOrderExistAsync(order.Id, cancellationToken);
 
@@ -166,7 +166,7 @@ public class OrderPricer
     [LoyaltyTier.Gold] = 10m
   };
 
-  private static decimal CalculateLoyaltyDiscount(Customer customer) =>
+  public static decimal CalculateLoyaltyDiscount(Customer customer) =>
     LoyaltyDiscounts.GetValueOrDefault(customer.LoyaltyTier, 0m);
 
   private async Task<bool> IsOrderExistAsync(int orderId, CancellationToken cancellationToken)

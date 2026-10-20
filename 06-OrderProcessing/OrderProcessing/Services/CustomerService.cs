@@ -15,6 +15,7 @@ public class CustomerService
 
   public async Task<Customer> GetCustomerAsync(int id, CancellationToken cancellationToken = default)
   {
+    await Task.Delay(300, cancellationToken);
     var customer = await _customerRepository.GetByIdAsync(id, cancellationToken);
 
     if (customer is null)
