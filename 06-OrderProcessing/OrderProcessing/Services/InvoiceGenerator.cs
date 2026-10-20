@@ -24,7 +24,7 @@ public class InvoiceGenerator
     if (!Directory.Exists(_invoicesDirectory))
       Directory.CreateDirectory(_invoicesDirectory);
 
-    string fileName = $"invoice_{order.Id}.txt";
+    string fileName = string.Format(DataFiles.InvoiceFilePattern, order.Id);
     string filePath = Path.Combine(_invoicesDirectory, fileName);
 
     await File.WriteAllTextAsync(filePath, invoiceContent, cancellationToken);

@@ -23,6 +23,7 @@ public class Phase2Runner
   private readonly RaceConditionDemo _raceConditionDemo;
   private readonly IncomingOrderRepository _incomingOrderRepository;
   private readonly ProductRepository _productRepository;
+  private readonly ReportGenerator _reportGenerator;
 
   public Phase2Runner()
   {
@@ -35,6 +36,7 @@ public class Phase2Runner
     _raceConditionDemo = new RaceConditionDemo();
     _productRepository = new ProductRepository();
     _incomingOrderRepository = new IncomingOrderRepository();
+    _reportGenerator = new ReportGenerator();
   }
 
   public async Task RunAsync(CancellationToken cancellationToken = default)
@@ -118,5 +120,25 @@ public class Phase2Runner
 
     Console.WriteLine($"Orders in orders.json: {finalOrders.Count}");
     Console.WriteLine($"Contains exactly 20 orders: {finalOrders.Count == 20}");
+
+    Task<Report> reportTask = _reportGenerator.GenerateAsync(cancellationToken);
+    Console.WriteLine("\nGenerating report...");
+    var report = await reportTask;
+
+    PrintReport(report);
+  }
+
+  private static void PrintReport(Report report)
+  {
+    Console.WriteLine("\n=================== Report Summary ===================");
+    Console.WriteLine($"Total Orders: {report.TotalOrders}");
+    Console.WriteLine($"Completed: {report.CompletedCount}");
+    Console.WriteLine($"Rejected: {report.RejectedCount}");
+    Console.WriteLine($"Failed: {report.FailedCount}");
+    Console.WriteLine($"Payment Failed: {report.PaymentFailedCount}");
+    Console.WriteLine($"Total Revenue: ${report.TotalRevenue:F2}");
+    Console.WriteLine($"Average Order Value: ${report.AverageOrderValue:F2}");
+    Console.WriteLine($"Top Selling Product: {report.TopSellingProduct} ({report.TopSellingQuantity} units)");
+    Console.WriteLine("======================================================");
   }
 }
