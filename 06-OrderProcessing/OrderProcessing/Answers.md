@@ -3,6 +3,8 @@
 Student name: Mohamed Morsi
 Group / ID: #01
 
+## Phase 1 questions:
+
 ### 1- Why are the sync and async times almost the same when orders are awaited one after another?
 - First thing async doesn't block the thread while waiting for async operation, this the main deference between it and sync programing, but there is no relation between the execution time and async, so it doesnt make the code executes faster + the thread.sleep is converted into task.daly.
 
@@ -22,3 +24,49 @@ Group / ID: #01
 ### 5- What is the difference between File.ReadAllText and File.ReadAllTextAsync? Does the async version occupy a thread while the disk is reading?
 - The main difference is about blocking the calling thread. File.ReadAllText blocks the calling thread so, it remain idel without doing anything. File.ReadAllTextAsync returns the calling thread into the thread bool insted of blocking it.
 - No, the async version doesnt occupy thread in reading file, if we use await.
+
+## Phase 2 questions:
+### 1- What is the difference between starting a task and awaiting it?
+- The main difference is about parallel execution & concurrent execution.
+- Starting the task makes a parallel execution with other tasks that started at the same moment, but awaiting it mean the execution done in a concurrent way.
+- We usually statrting the **eavy tasks liks CPU bound for example report generation in ourtask**, but **I/O, DB calls, Http requests we usually use await them**.
+- In other word, Starting the task means the task is being executed sync until the first await in the method, but awaiting it means the calling thread will back into the pool to do another work until the task finish its execution.
+
+
+### 2- Does every Task create a new thread? Does Task.Delay() use a thread while waiting?
+- Task doesn't create a new thread, also It doesn't block the caller thread.
+- No, Task.Delay doesn't occupy a thread while waiting, It allows the caller thread to return to the pool and do another work instead of blocking.
+
+### 3- What happens if you call .Result or .Wait() on an unfinished task instead of await? Why is it dangerous? Write a small separate demo method — the only place .Result / .Wait() is allowed.
+
+- It occupy the caller thread until the task finishes.
+- Because it blocks the caller thread, that's mean the thread stay waiting without doing anything and this lead to thread starvation.
+
+```csharp
+static void BlockingDemo()
+{
+  Task task = Task.Delay(2000);
+
+  task.Wait(); // Blocks until the task finishes
+
+  Console.WriteLine("Done!");
+}
+```
+
+### 4 - What happens to an exception thrown inside a task that is never awaited?
+- The exception will stored inside the task, and we can't observet it.
+
+### 5- When should you use Task.Run(), and when should you avoid it?
+- When I have a heavy CPU bound operation such as generating a report, and avoid it for call externall service, DB or I/O bound.
+
+### 6- What is the difference between Task and Task<T>?
+- the main difference is the return type.
+- Task doesn't return a result while Task<T> returns a reult of type t.
+
+### 7- Why can a lock block not contain an await?
+- because the thread that aquires a lock must release it, when we using await we can't guarante the same thread that awaited will returned a gain to consume the work and release the lock.
+
+### 8- Why did the unprotected stock reservation oversell, and how did you prevent it?
+- because two orders tried to reverse the last uint of the same product at the same time, and there was no lock on stock reservation, I prevent it by using a semaphore slim to allow only one order at a time to reverse the stock.
+
+
