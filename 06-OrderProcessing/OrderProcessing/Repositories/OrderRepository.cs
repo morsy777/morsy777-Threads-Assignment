@@ -7,23 +7,39 @@ namespace OrderProcessing.Repositories;
 
 public class OrderRepository
 {
+  private static readonly SemaphoreSlim _saveLock = new(1, 1);
   private readonly JsonFileStore _jsonFileStore;
   public OrderRepository()
   {
     _jsonFileStore = new JsonFileStore();
   }
 
+
   public async Task SaveAsync(Order order, CancellationToken cancellationToken = default)
   {
     if (order is null)
       return;
 
-    await Task.Delay(200, cancellationToken);
-    var orders = await _jsonFileStore.ReadAsync<List<Order>>(DataFiles.Orders, cancellationToken);
+    try
+    {
+      await _saveLock.WaitAsync(cancellationToken);
+    }
+    catch (OperationCanceledException)
+    {
+      Logger.Error<OrderRepository>("Saving order was cancelled.");
+      return;
+    }
 
     try
     {
+      await Task.Delay(200, cancellationToken);
+      var orders = await _jsonFileStore.ReadAsync<List<Order>>(DataFiles.Orders, cancellationToken);
+      orders ??= [];
+
       await Task.Delay(300, cancellationToken);
+
+      bool updated = false;
+
       foreach (var storedOrder in orders)
       {
         cancellationToken.ThrowIfCancellationRequested();
@@ -31,17 +47,25 @@ public class OrderRepository
         if (storedOrder.Id == order.Id)
         {
           UpdateOrder(storedOrder, order);
-          await _jsonFileStore.WriteAsync(DataFiles.Orders, orders, cancellationToken);
-          return;
+          updated = true;
+          break;
         }
       }
 
-      orders.Add(order);
+      if (!updated)
+      {
+        orders.Add(order);
+      }
+
       await _jsonFileStore.WriteAsync(DataFiles.Orders, orders, cancellationToken);
     }
     catch (OperationCanceledException)
     {
       Logger.Error<OrderRepository>("Saving order was cancelled.");
+    }
+    finally
+    {
+      _saveLock.Release();
     }
   }
 
