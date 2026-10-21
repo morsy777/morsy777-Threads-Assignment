@@ -13,9 +13,11 @@ public class PricingService
   private readonly CouponRepository _couponRepository;
   private readonly OrderRepository _orderRepository;
 
-  public PricingService()
+  public PricingService() : this(new OrderPricer([])) { }
+
+  public PricingService(OrderPricer? orderPricer)
   {
-    _orderPricer = new OrderPricer(new int[] { 7 });
+    _orderPricer = orderPricer ?? new OrderPricer([]);
     _productRepository = new ProductRepository();
     _customerRepository = new CustomerRepository();
     _couponRepository = new CouponRepository();

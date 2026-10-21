@@ -139,7 +139,7 @@ public class CheckoutService
     {
       if (!string.IsNullOrEmpty(order.TransactionId))
       {
-        await _paymentGateway.RefundAsync(order.TransactionId);
+        await _paymentGateway.RefundAsync(order.TransactionId, cancellationToken);
       }
 
       foreach (var item in order.Items)
