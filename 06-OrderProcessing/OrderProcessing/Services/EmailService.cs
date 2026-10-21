@@ -1,3 +1,4 @@
+using OrderProcessing.Exceptions;
 using OrderProcessing.Models;
 using OrderProcessing.Persistence;
 using OrderProcessing.Persistence.Constants;
@@ -7,12 +8,35 @@ namespace OrderProcessing.Services;
 public class EmailService : IEmailService
 {
   private static readonly SemaphoreSlim _emailLock = new(1, 1);
+  private readonly Dictionary<int, int> _failAttempts = [];
+  private readonly Dictionary<int, int> _attemptCounts = [];
   private readonly JsonFileStore _jsonFileStore;
 
-  public EmailService()
+  public EmailService() : this(null) { }
+
+  public EmailService(IDictionary<int, int>? failAttempts = null)
   {
     _jsonFileStore = new JsonFileStore();
+    if (failAttempts != null)
+    {
+      foreach (var kvp in failAttempts)
+      {
+        _failAttempts[kvp.Key] = kvp.Value;
+      }
+    }
   }
+
+  public int GetAttemptCount(int orderId)
+  {
+    lock (_attemptCounts)
+    {
+      if (_attemptCounts.TryGetValue(orderId, out int count))
+        return count;
+      return 0;
+    }
+  }
+
+
 
   public async Task SendConfirmationAsync(Order order, Customer customer, CancellationToken cancellationToken = default)
   {
@@ -28,6 +52,22 @@ public class EmailService : IEmailService
       return;
     }
 
+    int currentAttempt;
+    lock (_attemptCounts)
+    {
+      if (!_attemptCounts.TryGetValue(order.Id, out currentAttempt))
+        currentAttempt = 0;
+      currentAttempt++;
+      _attemptCounts[order.Id] = currentAttempt;
+    }
+
+    await Task.Delay(200, cancellationToken);
+
+    if (_failAttempts.TryGetValue(order.Id, out int maxFailures) && currentAttempt <= maxFailures)
+    {
+      Logger.Error<EmailService>($"Email attempt #{currentAttempt} for Order #{order.Id} failed (simulated SMTP failure).");
+      throw new SmtpUnavailableException($"SMTP server unavailable for Order #{order.Id} (attempt #{currentAttempt})");
+    }
 
     if (string.IsNullOrWhiteSpace(customer.Email))
     {
@@ -42,7 +82,7 @@ public class EmailService : IEmailService
       Subject = $"Order Confirmation #{order.Id}",
       Body = $"Dear {customer.Name}, your order #{order.Id} with total amount ${order.TotalAmount:F2} has been confirmed.",
       SentAt = DateTime.Now,
-      Attempts = 1,
+      Attempts = currentAttempt,
       LastError = null
     };
 
@@ -58,8 +98,6 @@ public class EmailService : IEmailService
 
     try
     {
-      await Task.Delay(200, cancellationToken);
-
       var emails = await _jsonFileStore.ReadAsync<List<EmailMessage>>(DataFiles.Emails, cancellationToken);
       emails ??= [];
 
@@ -68,7 +106,7 @@ public class EmailService : IEmailService
       emails.Add(emailMessage);
 
       await _jsonFileStore.WriteAsync(DataFiles.Emails, emails, cancellationToken);
-      Logger.Success<EmailService>($"Confirmation email sent to {customer.Email} for Order #{order.Id}.");
+      Logger.Success<EmailService>($"Confirmation email sent to {customer.Email} for Order #{order.Id} (attempt #{currentAttempt}).");
     }
     catch (OperationCanceledException)
     {

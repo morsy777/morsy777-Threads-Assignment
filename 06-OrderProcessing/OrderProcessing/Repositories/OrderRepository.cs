@@ -1,3 +1,4 @@
+using OrderProcessing.Exceptions;
 using OrderProcessing.Models;
 using OrderProcessing.Persistence;
 using OrderProcessing.Persistence.Constants;
@@ -8,10 +9,21 @@ namespace OrderProcessing.Repositories;
 public class OrderRepository
 {
   private static readonly SemaphoreSlim _saveLock = new(1, 1);
+  private readonly HashSet<int> _failSaveForOrderIds = new();
   private readonly JsonFileStore _jsonFileStore;
-  public OrderRepository()
+
+  public OrderRepository() : this(null) { }
+
+  public OrderRepository(IEnumerable<int>? failSaveForOrderIds = null)
   {
     _jsonFileStore = new JsonFileStore();
+    if (failSaveForOrderIds != null)
+    {
+      foreach (var id in failSaveForOrderIds)
+      {
+        _failSaveForOrderIds.Add(id);
+      }
+    }
   }
 
 
@@ -37,6 +49,12 @@ public class OrderRepository
       orders ??= [];
 
       await Task.Delay(300, cancellationToken);
+
+      if (order.Status == OrderStatus.Completed && _failSaveForOrderIds.Contains(order.Id))
+      {
+        Logger.Error<OrderRepository>($"Database save failed for order #{order.Id} (simulated connection loss).");
+        throw new DatabaseWriteException("Connection lost during commit");
+      }
 
       bool updated = false;
 

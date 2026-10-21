@@ -1,4 +1,4 @@
-﻿using System.Security.AccessControl;
+using System.Security.AccessControl;
 using System.Text;
 using OrderProcessing;
 using OrderProcessing.Models;
@@ -223,8 +223,8 @@ var order = new Order
 // var race = new RaceConditionDemo();
 // await race.RunAsync();
 
-var phase2 = new Phase2Runner();
-await phase2.RunAsync();
+// var phase2 = new Phase2Runner();
+// await phase2.RunAsync();
 
 // var repo = new OrderRepository();
 // var orders = await repo.GetAllAsync();
@@ -233,7 +233,52 @@ await phase2.RunAsync();
 //   Console.WriteLine(o.Status);
 // }
 
+#endregion
 
+#region Controlled Failures Runner
+
+// 1. Reset and re-seed data to ensure clean initial state
+var store = new JsonFileStore();
+var dataSeeder = new DataSeeder(store);
+await dataSeeder.SeedAsync();
+
+// 2. Configure dependencies with the specified controlled failure scenarios
+// Scenario 2: timeoutOrderIds { 5 }
+// Scenario 3: declineOrderIds { 8 }
+var controlledPaymentGateway = new PaymentGateway(
+  timeoutOrderIds: [5],
+  declineOrderIds: [8]
+);
+
+// Scenario 4: failSaveForOrderIds { 13 }
+var controlledOrderRepository = new OrderRepository(
+  failSaveForOrderIds: [13]
+);
+
+// Scenario 5: failAttempts { [3] = 2 }
+// Scenario 6: failAttempts { [17] = int.MaxValue }
+var controlledEmailService = new EmailService(
+  failAttempts: new Dictionary<int, int>
+  {
+    [3] = 2,
+    [17] = int.MaxValue
+  }
+);
+
+// 3. Inject dependencies into CheckoutService
+var checkoutService = new CheckoutService(
+  paymentGateway: controlledPaymentGateway,
+  orderRepository: controlledOrderRepository,
+  emailService: controlledEmailService
+);
+
+// 4. Run the scenarios and display expected vs actual results
+var controlledFailuresRunner = new ControlledFailuresRunner(
+  checkoutService,
+  controlledEmailService
+);
+
+await controlledFailuresRunner.RunAllScenariosAsync();
 
 #endregion
 

@@ -9,19 +9,83 @@ namespace OrderProcessing.Services;
 public class PaymentGateway : IPaymentGateway
 {
   private static readonly SemaphoreSlim _paymentLock = new(1, 1);
+  private readonly HashSet<int> _timeoutOrderIds = [];
+  private readonly HashSet<int> _declineOrderIds = [];
   private readonly JsonFileStore _jsonFileStore;
 
-  public PaymentGateway()
+  public PaymentGateway() : this(null, null) { }
+
+  public PaymentGateway(
+    IEnumerable<int>? timeoutOrderIds = null,
+    IEnumerable<int>? declineOrderIds = null)
   {
     _jsonFileStore = new JsonFileStore();
+
+    if (timeoutOrderIds != null)
+    {
+      foreach (var id in timeoutOrderIds)
+      {
+        _timeoutOrderIds.Add(id);
+      }
+    }
+
+    if (declineOrderIds != null)
+    {
+      foreach (var id in declineOrderIds)
+      {
+        _declineOrderIds.Add(id);
+      }
+    }
   }
 
-  public async Task<PaymentResult> ProcessPaymentAsync(int orderId, decimal amount, CancellationToken cancellationToken = default)
+  public async Task<PaymentResult> ProcessPaymentAsync(int orderId, decimal amount, CancellationToken cancellationToken)
   {
-    await Task.Delay(200, cancellationToken);
+    if (_timeoutOrderIds.Contains(orderId))
+    {
+      await Task.Delay(5000, cancellationToken);
+    }
+    else
+    {
+      await Task.Delay(700, cancellationToken);
+    }
+
+    if (_declineOrderIds.Contains(orderId))
+    {
+      var declinedResult = new PaymentResult
+      {
+        Success = false,
+        Status = PaymentStatus.Declined,
+        Message = "Card declined by issuer",
+        TransactionId = null
+      };
+
+      var declinedTransaction = new PaymentTransaction
+      {
+        OrderId = orderId,
+        Amount = amount,
+        Status = PaymentStatus.Declined,
+        TransactionId = null,
+        CreatedAt = DateTime.Now
+      };
+
+      await _paymentLock.WaitAsync(cancellationToken);
+      try
+      {
+        var payments = await _jsonFileStore.ReadAsync<List<PaymentTransaction>>(DataFiles.Payments, cancellationToken);
+        payments ??= [];
+        payments.Add(declinedTransaction);
+        await _jsonFileStore.WriteAsync(DataFiles.Payments, payments, cancellationToken);
+      }
+      finally
+      {
+        _paymentLock.Release();
+      }
+
+      return declinedResult;
+    }
 
     bool isCaptured = amount > 0 && orderId > 0;
-    string transactionId = "TXN-" + Guid.NewGuid().ToString("N")[..12].ToUpper();
+    string? transactionId = isCaptured ? ("TXN-" + Guid.NewGuid().ToString("N")[..12].ToUpper()) : null;
     PaymentStatus status = isCaptured ? PaymentStatus.Captured : PaymentStatus.Declined;
     string message = isCaptured ? "Payment captured successfully." : "Payment declined.";
 
@@ -46,8 +110,6 @@ public class PaymentGateway : IPaymentGateway
 
     try
     {
-      await Task.Delay(300, cancellationToken);
-
       var payments = await _jsonFileStore.ReadAsync<List<PaymentTransaction>>(DataFiles.Payments, cancellationToken);
       payments ??= [];
 
@@ -74,7 +136,7 @@ public class PaymentGateway : IPaymentGateway
     };
   }
 
-  public async Task RefundAsync(string transactionId, CancellationToken cancellationToken = default)
+  public async Task RefundAsync(string transactionId, CancellationToken cancellationToken)
   {
     if (string.IsNullOrWhiteSpace(transactionId))
     {
