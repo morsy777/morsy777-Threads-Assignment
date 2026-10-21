@@ -215,7 +215,8 @@ public class CheckoutService
       retries ??= [];
       retries.Add(retryMessage);
       await _jsonFileStore.WriteAsync(DataFiles.EmailRetry, retries, cancellationToken);
-      Logger.Error<CheckoutService>($"Order #{order.Id} added to email retry queue after {attempts} failed attempts.");
+      // Logger.Error<CheckoutService>($"Order #{order.Id} added to email retry queue after {attempts} failed attempts.");
+      Logger.Error<CheckoutService>($"Email for Order #{order.Id} queued for retry later");
     }
     catch (Exception ex)
     {

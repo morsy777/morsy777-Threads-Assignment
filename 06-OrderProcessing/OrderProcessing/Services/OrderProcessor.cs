@@ -6,6 +6,7 @@ using OrderProcessing.Models.Results;
 using OrderProcessing.Persistence;
 using OrderProcessing.Persistence.Constants;
 using OrderProcessing.Repositories;
+using System.Collections;
 
 namespace OrderProcessing.Services;
 
@@ -20,22 +21,23 @@ public class OrderProcessor
   private readonly IEmailService _emailService;
   private readonly JsonFileStore _jsonFileStore;
 
-  public OrderProcessor()
+  public OrderProcessor() : this(null, null, null, null)
   {
-    _customerService = new CustomerService();
-    _inventoryService = new InventoryService();
-    _pricingService = new PricingService(new OrderPricer([]));
-    _paymentGateway = new PaymentGateway([5], [8]);
-    _orderRepository = new OrderRepository([13]);
-    _emailService = new EmailService(new Dictionary<int, int>
-    {
-      [3] = 2,
-      [17] = int.MaxValue
-    });
-    _jsonFileStore = new JsonFileStore();
   }
 
-
+  public OrderProcessor(Dictionary<int, int>? emailConfig,
+      IEnumerable<int>? timeoutOrderIds,
+      IEnumerable<int>? declineOrderIds,
+      IEnumerable<int>? failSaveForOrderIds)
+  {
+      _customerService = new CustomerService();
+      _inventoryService = new InventoryService();
+      _pricingService = new PricingService(new OrderPricer([]));
+      _paymentGateway = new PaymentGateway(timeoutOrderIds ?? [], declineOrderIds ?? []);
+      _orderRepository = new OrderRepository(failSaveForOrderIds ?? []);
+      _emailService = new EmailService(emailConfig ?? []);
+      _jsonFileStore = new JsonFileStore();
+  }
   public async Task<bool> ProcessOrderAsync(Order order, CancellationToken cancellationToken = default)
   {
     if (order is null)
@@ -293,6 +295,7 @@ public class OrderProcessor
       retries.Add(retryMessage);
       await _jsonFileStore.WriteAsync(DataFiles.EmailRetry, retries, cancellationToken);
       Logger.Error<OrderProcessor>($"Order #{order.Id} added to email retry queue after {attempts} failed attempts.");
+      Logger.Error<CheckoutService>($"Email for Order #{order.Id} queued for retry later");
     }
     catch (Exception ex)
     {

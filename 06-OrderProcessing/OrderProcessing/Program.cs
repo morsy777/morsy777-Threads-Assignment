@@ -285,6 +285,126 @@ var order = new Order
 
 #region Task 9.3 — OrderProcessor.ProcessOrderAsync
 
+// var jsonFileStore = new JsonFileStore();
+// var dataSeeder = new DataSeeder(jsonFileStore);
+// await dataSeeder.SeedAsync();
+// var initialProducts = await jsonFileStore.ReadAsync<List<Product>>(DataFiles.Products);
+
+// var incomingOrderRepository = new IncomingOrderRepository();
+// var incomingOrders = await incomingOrderRepository.GetAllAsync();
+// var orderProcessor = new OrderProcessor(
+//     new Dictionary<int, int>
+//     {
+//         [3] = 2,
+//         [17] = int.MaxValue
+//     },
+//     [5],
+//     [8],
+//     [13]
+// );
+// var processingTasks = new List<Task<bool>>(incomingOrders.Count);
+
+// foreach (var incomingOrder in incomingOrders)
+// {
+//   processingTasks.Add(orderProcessor.ProcessOrderAsync(incomingOrder)); 
+// }
+
+// foreach (var processingTask in processingTasks)
+// {
+//   await processingTask;
+// }
+
+// Console.WriteLine();
+// Console.WriteLine($"{"Order",-8} {"Status",-14} {"Total",12}  Reason");
+// foreach (var incomingOrder in incomingOrders.OrderBy(order => order.Id))
+// {
+//   Console.WriteLine($"{incomingOrder.Id,-8} {incomingOrder.Status,-14} {incomingOrder.TotalAmount,12:F2}  {incomingOrder.FailureReason ?? "-"}");
+// }
+
+
+
+#endregion
+
+#region Verify persisted controlled-failure output
+
+// var payments = await jsonFileStore.ReadAsync<List<PaymentTransaction>>(DataFiles.Payments);
+// var emails = await jsonFileStore.ReadAsync<List<EmailMessage>>(DataFiles.Emails);
+// var emailRetries = await jsonFileStore.ReadAsync<List<EmailMessage>>(DataFiles.EmailRetry);
+// var processedOrders = await new OrderRepository().GetAllAsync();
+// var finalProducts = await jsonFileStore.ReadAsync<List<Product>>(DataFiles.Products);
+// var failedChecks = new List<string>();
+
+// void Check(string name, bool passed)
+// {
+//   Console.WriteLine($"{(passed ? "PASS" : "FAIL")}: {name}");
+//   if (!passed)
+//     failedChecks.Add(name);
+// }
+
+// Check("payments.json contains 13 records", payments.Count == 13);
+// Check("payments.json contains 11 captured payments",
+//   payments.Count(payment => payment.Status == PaymentStatus.Captured) == 11);
+// Check("Order #8 has a declined payment",
+//   payments.Count(payment => payment.OrderId == 8 && payment.Status == PaymentStatus.Declined) == 1);
+// Check("Order #13 has a refunded payment",
+//   payments.Count(payment => payment.OrderId == 13 && payment.Status == PaymentStatus.Refunded) == 1);
+// Check("Order #5 has no payment record", payments.All(payment => payment.OrderId != 5));
+
+// var completedOrderIds = processedOrders
+//   .Where(processedOrder => processedOrder.Status == OrderStatus.Completed)
+//   .Select(processedOrder => processedOrder.Id)
+//   .ToHashSet();
+// var expectedEmailedOrderIds = completedOrderIds.Where(orderId => orderId != 17).ToHashSet();
+// var actualEmailedOrderIds = emails.Select(email => email.OrderId).ToHashSet();
+
+// Check("emails.json contains 10 records", emails.Count == 10);
+// Check("Every Completed order except #17 has a confirmation email",
+//   actualEmailedOrderIds.SetEquals(expectedEmailedOrderIds));
+// Check("Order #17 is Completed without a confirmation email",
+//   completedOrderIds.Contains(17) && emails.All(email => email.OrderId != 17));
+// Check("Order #3 confirmation email records 3 attempts",
+//   emails.Count(email => email.OrderId == 3 && email.Attempts == 3) == 1);
+// Check("email_retry.json contains exactly one record for Order #17",
+//   emailRetries.Count == 1 && emailRetries[0].OrderId == 17);
+// Check("Order #17 retry records 4 attempts and a LastError",
+//   emailRetries.Count == 1 &&
+//   emailRetries[0].Attempts == 4 &&
+//   !string.IsNullOrWhiteSpace(emailRetries[0].LastError));
+
+// var expectedStockByProductId = initialProducts.ToDictionary(
+//   product => product.Id,
+//   product => product.StockQuantity);
+// foreach (var completedOrder in processedOrders.Where(
+//            processedOrder => processedOrder.Status == OrderStatus.Completed))
+// {
+//   foreach (var item in completedOrder.Items)
+//   {
+//     expectedStockByProductId[item.ProductId] -= item.Quantity;
+//   }
+// }
+
+// Check("products.json stock reflects deductions from Completed orders only",
+//   finalProducts.Count == initialProducts.Count &&
+//   finalProducts.All(product =>
+//     expectedStockByProductId.TryGetValue(product.Id, out int expectedStock) &&
+//     product.StockQuantity == expectedStock));
+// Check("Mechanical Keyboard stock is 0",
+//   finalProducts.Any(product =>
+//     product.Name == "Mechanical Keyboard" && product.StockQuantity == 0));
+
+// if (failedChecks.Count > 0)
+// {
+//   throw new InvalidOperationException(
+//     $"Persisted-output verification failed: {string.Join(", ", failedChecks)}");
+// }
+
+// Console.WriteLine("All persisted-output checks passed.");
+
+#endregion
+
+#region 9.6 Sync vs async comparison
+
+
 var jsonFileStore = new JsonFileStore();
 var dataSeeder = new DataSeeder(jsonFileStore);
 await dataSeeder.SeedAsync();
@@ -293,13 +413,20 @@ var initialProducts = await jsonFileStore.ReadAsync<List<Product>>(DataFiles.Pro
 var incomingOrderRepository = new IncomingOrderRepository();
 var incomingOrders = await incomingOrderRepository.GetAllAsync();
 var orderProcessor = new OrderProcessor();
-var processingTasks = new List<Task<bool>>(incomingOrders.Count);
+var processingTasks = new List<Task<bool>>(incomingOrders.Count/2);
 
+int count = 0;
 foreach (var incomingOrder in incomingOrders)
 {
+  count++;
+
+  if (count > 10)
+    break;
+
   processingTasks.Add(orderProcessor.ProcessOrderAsync(incomingOrder));
 }
 
+// 10 tasks
 foreach (var processingTask in processingTasks)
 {
   await processingTask;
@@ -307,93 +434,19 @@ foreach (var processingTask in processingTasks)
 
 Console.WriteLine();
 Console.WriteLine($"{"Order",-8} {"Status",-14} {"Total",12}  Reason");
-foreach (var incomingOrder in incomingOrders.OrderBy(order => order.Id))
+count = 0;
+foreach (var incomingOrder in incomingOrders)
 {
+  count++;
+
+  if (count > 10)
+    break;
   Console.WriteLine($"{incomingOrder.Id,-8} {incomingOrder.Status,-14} {incomingOrder.TotalAmount,12:F2}  {incomingOrder.FailureReason ?? "-"}");
 }
 
 
 
 #endregion
-
-#region Verify persisted controlled-failure output
-
-var payments = await jsonFileStore.ReadAsync<List<PaymentTransaction>>(DataFiles.Payments);
-var emails = await jsonFileStore.ReadAsync<List<EmailMessage>>(DataFiles.Emails);
-var emailRetries = await jsonFileStore.ReadAsync<List<EmailMessage>>(DataFiles.EmailRetry);
-var processedOrders = await new OrderRepository().GetAllAsync();
-var finalProducts = await jsonFileStore.ReadAsync<List<Product>>(DataFiles.Products);
-var failedChecks = new List<string>();
-
-void Check(string name, bool passed)
-{
-  Console.WriteLine($"{(passed ? "PASS" : "FAIL")}: {name}");
-  if (!passed)
-    failedChecks.Add(name);
-}
-
-Check("payments.json contains 13 records", payments.Count == 13);
-Check("payments.json contains 11 captured payments",
-  payments.Count(payment => payment.Status == PaymentStatus.Captured) == 11);
-Check("Order #8 has a declined payment",
-  payments.Count(payment => payment.OrderId == 8 && payment.Status == PaymentStatus.Declined) == 1);
-Check("Order #13 has a refunded payment",
-  payments.Count(payment => payment.OrderId == 13 && payment.Status == PaymentStatus.Refunded) == 1);
-Check("Order #5 has no payment record", payments.All(payment => payment.OrderId != 5));
-
-var completedOrderIds = processedOrders
-  .Where(processedOrder => processedOrder.Status == OrderStatus.Completed)
-  .Select(processedOrder => processedOrder.Id)
-  .ToHashSet();
-var expectedEmailedOrderIds = completedOrderIds.Where(orderId => orderId != 17).ToHashSet();
-var actualEmailedOrderIds = emails.Select(email => email.OrderId).ToHashSet();
-
-Check("emails.json contains 10 records", emails.Count == 10);
-Check("Every Completed order except #17 has a confirmation email",
-  actualEmailedOrderIds.SetEquals(expectedEmailedOrderIds));
-Check("Order #17 is Completed without a confirmation email",
-  completedOrderIds.Contains(17) && emails.All(email => email.OrderId != 17));
-Check("Order #3 confirmation email records 3 attempts",
-  emails.Count(email => email.OrderId == 3 && email.Attempts == 3) == 1);
-Check("email_retry.json contains exactly one record for Order #17",
-  emailRetries.Count == 1 && emailRetries[0].OrderId == 17);
-Check("Order #17 retry records 4 attempts and a LastError",
-  emailRetries.Count == 1 &&
-  emailRetries[0].Attempts == 4 &&
-  !string.IsNullOrWhiteSpace(emailRetries[0].LastError));
-
-var expectedStockByProductId = initialProducts.ToDictionary(
-  product => product.Id,
-  product => product.StockQuantity);
-foreach (var completedOrder in processedOrders.Where(
-           processedOrder => processedOrder.Status == OrderStatus.Completed))
-{
-  foreach (var item in completedOrder.Items)
-  {
-    expectedStockByProductId[item.ProductId] -= item.Quantity;
-  }
-}
-
-Check("products.json stock reflects deductions from Completed orders only",
-  finalProducts.Count == initialProducts.Count &&
-  finalProducts.All(product =>
-    expectedStockByProductId.TryGetValue(product.Id, out int expectedStock) &&
-    product.StockQuantity == expectedStock));
-Check("Mechanical Keyboard stock is 0",
-  finalProducts.Any(product =>
-    product.Name == "Mechanical Keyboard" && product.StockQuantity == 0));
-
-if (failedChecks.Count > 0)
-{
-  throw new InvalidOperationException(
-    $"Persisted-output verification failed: {string.Join(", ", failedChecks)}");
-}
-
-Console.WriteLine("All persisted-output checks passed.");
-
-#endregion
-
-
 
 
 
