@@ -1,4 +1,4 @@
-﻿using System.Security.AccessControl;
+using System.Security.AccessControl;
 using System.Text;
 using OrderProcessing;
 using OrderProcessing.Models;
@@ -8,7 +8,9 @@ using OrderProcessing.Persistence.Constants;
 using OrderProcessing.Repositories;
 using OrderProcessing.Runners;
 using OrderProcessing.Services;
+using OrderProcessing.SyncServices;
 using OrderProcessing.Validators;
+using System.Diagnostics;
 
 #region Test Email 
 // string Name = "Mohamed Morsi";
@@ -405,51 +407,155 @@ var order = new Order
 #region 9.6 Sync vs async comparison
 
 
-var jsonFileStore = new JsonFileStore();
-var dataSeeder = new DataSeeder(jsonFileStore);
-await dataSeeder.SeedAsync();
-var initialProducts = await jsonFileStore.ReadAsync<List<Product>>(DataFiles.Products);
 
-var incomingOrderRepository = new IncomingOrderRepository();
-var incomingOrders = await incomingOrderRepository.GetAllAsync();
-var orderProcessor = new OrderProcessor();
-var processingTasks = new List<Task<bool>>(incomingOrders.Count/2);
+// var jsonFileStore = new JsonFileStore();
+// var dataSeeder = new DataSeeder(jsonFileStore);
+// await dataSeeder.SeedAsync();
+// var initialProducts = jsonFileStore.Read<List<Product>>(DataFiles.Products);
 
-int count = 0;
-foreach (var incomingOrder in incomingOrders)
-{
-  count++;
+// var incomingOrderRepository = new IncomingOrderRepository();
+// var incomingOrders = await incomingOrderRepository.GetAllAsync();
+// var syncOrderProcessor = new SyncOrderProcessor();
+// var threads = new List<Thread>(10);
 
-  if (count > 10)
-    break;
+// int count = 0;
+// foreach (var incomingOrder in incomingOrders)
+// {
+//   count++;
 
-  processingTasks.Add(orderProcessor.ProcessOrderAsync(incomingOrder));
-}
+//   if (count > 10)
+//     break;
 
-// 10 tasks
-foreach (var processingTask in processingTasks)
-{
-  await processingTask;
-}
+//   var orderToProcess = incomingOrder;
+//   threads.Add(new Thread(() => syncOrderProcessor.ProcessOrder(orderToProcess)));
+// }
 
-Console.WriteLine();
-Console.WriteLine($"{"Order",-8} {"Status",-14} {"Total",12}  Reason");
-count = 0;
-foreach (var incomingOrder in incomingOrders)
-{
-  count++;
+// // Start all 10 threads first
+// foreach (var thread in threads)
+// {
+//   thread.Start();
+// }
 
-  if (count > 10)
-    break;
-  Console.WriteLine($"{incomingOrder.Id,-8} {incomingOrder.Status,-14} {incomingOrder.TotalAmount,12:F2}  {incomingOrder.FailureReason ?? "-"}");
-}
+// // Then call Join() on each thread
+// foreach (var thread in threads)
+// {
+//   thread.Join();
+// }
+
+// Console.WriteLine();
+// Console.WriteLine($"{"Order",-8} {"Status",-14} {"Total",12}  Reason");
+// count = 0;
+// foreach (var incomingOrder in incomingOrders)
+// {
+//   count++;
+
+//   if (count > 10)
+//     break;
+//   Console.WriteLine($"{incomingOrder.Id,-8} {incomingOrder.Status,-14} {incomingOrder.TotalAmount,12:F2}  {incomingOrder.FailureReason ?? "-"}");
+// }
 
 
 
 #endregion
 
 
+#region 9.6 Async Order Processing
 
+var jsonFileStore = new JsonFileStore();
+var dataSeeder = new DataSeeder(jsonFileStore);
 
+await dataSeeder.SeedAsync();
 
+var initialProducts =
+    await jsonFileStore.ReadAsync<List<Product>>(DataFiles.Products);
+
+var incomingOrderRepository = new IncomingOrderRepository();
+var incomingOrders = await incomingOrderRepository.GetAllAsync();
+
+var orderProcessor = new OrderProcessor();
+var processingTasks = new List<Task<bool>>(10);
+
+var asyncStopwatch = Stopwatch.StartNew();
+
+foreach (var incomingOrder in incomingOrders.Take(10))
+{
+    processingTasks.Add(
+        orderProcessor.ProcessOrderAsync(incomingOrder));
+}
+
+await Task.WhenAll(processingTasks);
+
+asyncStopwatch.Stop();
+
+Console.WriteLine(
+    $"Async execution time: {asyncStopwatch.Elapsed.TotalMilliseconds:F2} ms");
+
+Console.WriteLine();
+Console.WriteLine($"{"Order",-8} {"Status",-14} {"Total",12}  Reason");
+
+foreach (var incomingOrder in incomingOrders.Take(10))
+{
+    Console.WriteLine(
+        $"{incomingOrder.Id,-8} " +
+        $"{incomingOrder.Status,-14} " +
+        $"{incomingOrder.TotalAmount,12:F2}  " +
+        $"{incomingOrder.FailureReason ?? "-"}");
+}
+
+#endregion
+
+#region 9.6 Sync Order Processing
+
+var syncJsonFileStore = new JsonFileStore();
+var syncDataSeeder = new DataSeeder(syncJsonFileStore);
+
+await syncDataSeeder.SeedAsync();
+
+var syncInitialProducts =
+    syncJsonFileStore.Read<List<Product>>(DataFiles.Products);
+
+var syncIncomingOrderRepository = new IncomingOrderRepository();
+var syncIncomingOrders = await syncIncomingOrderRepository.GetAllAsync();
+
+var syncOrderProcessor = new SyncOrderProcessor();
+var threads = new List<Thread>(10);
+
+var syncStopwatch = Stopwatch.StartNew();
+
+foreach (var incomingOrder in syncIncomingOrders.Take(10))
+{
+    var orderToProcess = incomingOrder;
+
+    threads.Add(new Thread(
+        () => syncOrderProcessor.ProcessOrder(orderToProcess)));
+}
+
+foreach (var thread in threads)
+{
+    thread.Start();
+}
+
+foreach (var thread in threads)
+{
+    thread.Join();
+}
+
+syncStopwatch.Stop();
+
+Console.WriteLine(
+    $"Sync execution time: {syncStopwatch.Elapsed.TotalMilliseconds:F2} ms");
+
+Console.WriteLine();
+Console.WriteLine($"{"Order",-8} {"Status",-14} {"Total",12}  Reason");
+
+foreach (var incomingOrder in syncIncomingOrders.Take(10))
+{
+    Console.WriteLine(
+        $"{incomingOrder.Id,-8} " +
+        $"{incomingOrder.Status,-14} " +
+        $"{incomingOrder.TotalAmount,12:F2}  " +
+        $"{incomingOrder.FailureReason ?? "-"}");
+}
+
+#endregion
 

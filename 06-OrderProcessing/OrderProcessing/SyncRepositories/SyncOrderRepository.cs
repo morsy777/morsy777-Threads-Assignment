@@ -1,16 +1,29 @@
+using OrderProcessing.Exceptions;
 using OrderProcessing.Models;
+using OrderProcessing.Models.Enums;
 using OrderProcessing.Persistence;
 using OrderProcessing.Persistence.Constants;
-using OrderProcessing.Models.Enums;
 
 namespace OrderProcessing.SyncRepositories;
 
 public class SyncOrderRepository
 {
+  private static readonly Lock _saveLock = new();
+  private readonly HashSet<int> _failSaveForOrderIds = [];
   private readonly JsonFileStore _jsonFileStore;
-  public SyncOrderRepository()
+
+  public SyncOrderRepository() : this(null) { }
+
+  public SyncOrderRepository(IEnumerable<int>? failSaveForOrderIds = null)
   {
     _jsonFileStore = new JsonFileStore();
+    if (failSaveForOrderIds != null)
+    {
+      foreach (var id in failSaveForOrderIds)
+      {
+        _failSaveForOrderIds.Add(id);
+      }
+    }
   }
 
   public void Save(Order order)
@@ -18,28 +31,44 @@ public class SyncOrderRepository
     if (order is null)
       return;
 
-    Thread.Sleep(200);
-    var orders = _jsonFileStore.Read<List<Order>>(DataFiles.Orders);
-
-    try
+    lock (_saveLock)
     {
-      Thread.Sleep(300);
-      foreach (var storedOrder in orders)
+      Thread.Sleep(200);
+      var orders = _jsonFileStore.Read<List<Order>>(DataFiles.Orders);
+      orders ??= [];
+
+      try
       {
-        if (storedOrder.Id == order.Id)
-        {
-          UpdateOrder(storedOrder, order);
-          _jsonFileStore.Write(DataFiles.Orders, orders);
-          return;
-        }
-      }
+        Thread.Sleep(300);
 
-      orders.Add(order);
-      _jsonFileStore.Write(DataFiles.Orders, orders);
-    }
-    catch (OperationCanceledException)
-    {
-      Logger.Error<SyncOrderRepository>("Saving order was cancelled.");
+        if (order.Status == OrderStatus.Completed && _failSaveForOrderIds.Contains(order.Id))
+        {
+          Logger.Error<SyncOrderRepository>($"Database save failed for order #{order.Id} (simulated connection loss).");
+          throw new DatabaseWriteException("Connection lost during commit");
+        }
+
+        bool updated = false;
+        foreach (var storedOrder in orders)
+        {
+          if (storedOrder.Id == order.Id)
+          {
+            UpdateOrder(storedOrder, order);
+            updated = true;
+            break;
+          }
+        }
+
+        if (!updated)
+        {
+          orders.Add(order);
+        }
+
+        _jsonFileStore.Write(DataFiles.Orders, orders);
+      }
+      catch (OperationCanceledException)
+      {
+        Logger.Error<SyncOrderRepository>("Saving order was cancelled.");
+      }
     }
   }
 
@@ -47,13 +76,14 @@ public class SyncOrderRepository
   {
     Thread.Sleep(200);
     var orders = _jsonFileStore.Read<List<Order>>(DataFiles.Orders);
-    return orders;
+    return orders ?? [];
   }
 
   public List<Order> GetByStatus(OrderStatus status)
   {
     Thread.Sleep(200);
     var orders = _jsonFileStore.Read<List<Order>>(DataFiles.Orders);
+    orders ??= [];
 
     var filteredOrders = new List<Order>();
     try
@@ -73,6 +103,32 @@ public class SyncOrderRepository
     return filteredOrders;
   }
 
+  public Order? GetById(int orderId)
+  {
+    if (orderId <= 0)
+    {
+      Logger.Error<SyncOrderRepository>("Invalid Order Id");
+      return default;
+    }
+
+    var orders = GetAll();
+
+    try
+    {
+      Thread.Sleep(300);
+      foreach (var order in orders)
+      {
+        if (order.Id == orderId)
+          return order;
+      }
+    }
+    catch (OperationCanceledException)
+    {
+      Logger.Error<SyncOrderRepository>($"Getting order #{orderId} was cancelled.");
+    }
+
+    return default;
+  }
 
   private static void UpdateOrder(Order storedOrder, Order order)
   {
