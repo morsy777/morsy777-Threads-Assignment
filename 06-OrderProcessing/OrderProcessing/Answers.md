@@ -69,4 +69,24 @@ static void BlockingDemo()
 ### 8- Why did the unprotected stock reservation oversell, and how did you prevent it?
 - because two orders tried to reverse the last uint of the same product at the same time, and there was no lock on stock reservation, I prevent it by using a semaphore slim to allow only one order at a time to reverse the stock.
 
+## Phase 3 Questions:
 
+```csharp
+public async Task ProcessOrderAsync(Order order, Customer customer)
+{
+    await _orderRepository.SaveAsync(order);
+    _emailService.SendConfirmationAsync(order, customer);
+    Console.WriteLine("Order processing finished");
+}
+```
+### 1 Find the problem in this code?
+- if an exception occur in SendConfirmationAsync, the excpetion will stored inside the task and the ProcessOrderAsync will countinue its work and print "Order processing finished", whichs mislead the users into thinking the entire process has successeded, even though the confirmation email might not have been sent yet.
+
+### 2 Show what happens if the email is still being sent when the method returns, or when the console app exits?
+- The email might not be sent if an exception occurs. Also, if the console app exits before the email-sending task completes, the email might not be sent because the process terminates.
+
+### 3- Show what happens if the email operation throws an exception?
+- The exception will stored in the returned task, so ProcessOrderAsync didn't observe anything.
+
+### 4- Fix the implementation. Show the console output before and after the fix.
+- Just use an 'await' keyword, if an exception occured, the ProcessOrderAsync will observe it so it doesn't print "Order processing finished".
