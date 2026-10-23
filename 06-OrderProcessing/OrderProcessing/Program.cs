@@ -559,9 +559,9 @@ var order = new Order
 
 #region Phase 3 
 
-var phase3Runner = new Phase3Runner();
+// var phase3Runner = new Phase3Runner();
 
-await phase3Runner.RunAsync();
+// await phase3Runner.RunAsync();
 
 #endregion
 
@@ -570,6 +570,7 @@ await phase3Runner.RunAsync();
 var phase4Runner = new Phase4Runner();
 
 await phase4Runner.RunLiveCheckoutAsync();
+await phase4Runner.RunCustomerDashboardAsync();
 
 #endregion
 

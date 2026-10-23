@@ -120,6 +120,39 @@ public class OrderRepository
     return filteredOrders;
   }
 
+  public async Task<List<Order>> GetByCustomerIdAsync(int customerId, CancellationToken cancellationToken = default)
+  {
+    await Task.Delay(200, cancellationToken);
+    var orders = await _jsonFileStore.ReadAsync<List<Order>>(DataFiles.Orders, cancellationToken);
+    if (orders == null || orders.Count == 0)
+    {
+      orders = await _jsonFileStore.ReadAsync<List<Order>>(DataFiles.IncomingOrders, cancellationToken);
+    }
+
+    var filteredOrders = new List<Order>();
+    try
+    {
+      await Task.Delay(300, cancellationToken);
+
+      if (orders != null)
+      {
+        foreach (var order in orders)
+        {
+          cancellationToken.ThrowIfCancellationRequested();
+
+          if (order.CustomerId == customerId)
+            filteredOrders.Add(order);
+        }
+      }
+    }
+    catch (OperationCanceledException)
+    {
+      Logger.Error<OrderRepository>($"Loading orders for customer #{customerId} was cancelled.");
+    }
+
+    return filteredOrders;
+  }
+
   // Its not required in the assingment by I added it to achinve DRY and validate oreder existance.
   public async Task<Order?> GetByIdAsync(int orderId, CancellationToken cancellationToken = default)
   {

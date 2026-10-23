@@ -14,6 +14,7 @@ public class Phase4Runner
     private readonly DataSeeder _dataSeeder;
     private readonly IncomingOrderRepository _incomingOrderRepository;
     private OrderProcessor _orderProcessor;
+    private CustomerDashboardService _customerDashboardService;
 
     public Phase4Runner()
     {
@@ -21,11 +22,95 @@ public class Phase4Runner
         _dataSeeder = new DataSeeder(_jsonFileStore);
         _incomingOrderRepository = new IncomingOrderRepository();
         _orderProcessor = CreateConfiguredOrderProcessor();
+        _customerDashboardService = new CustomerDashboardService(failPaymentsForCustomerIds: new[] { 99 });
     }
-    public Task RunAsync(CancellationToken cancellationToken = default)
+    public async Task RunAsync(CancellationToken cancellationToken = default)
     {
-      return RunLiveCheckoutAsync(cancellationToken);
+      await RunLiveCheckoutAsync(cancellationToken);
+      await RunCustomerDashboardAsync(cancellationToken);
     }
+
+    public async Task RunCustomerDashboardAsync(CancellationToken cancellationToken = default)
+    {
+        Console.WriteLine();
+        Console.WriteLine("========== Customer Dashboard ==========");
+
+        try
+        {
+            var dashboard = await _customerDashboardService.LoadAsync(3, cancellationToken);
+
+            Console.Write($"Customer #{dashboard.Customer.Id} {dashboard.Customer.Name} — ");
+
+            Console.Write($"{dashboard.Orders.Count} orders (");
+            for (int i = 0; i < dashboard.Orders.Count; i++)
+            {
+                if (i > 0)
+                    Console.Write(", ");
+
+                var order = dashboard.Orders[i];
+                Console.Write($"#{order.Id} {order.Status}");
+            }
+
+            Console.Write("), ");
+
+            Console.Write($"{dashboard.Payments.Count} payments (");
+            for (int i = 0; i < dashboard.Payments.Count; i++)
+            {
+                if (i > 0)
+                    Console.Write(", ");
+
+                var payment = dashboard.Payments[i];
+                Console.Write($"#{payment.OrderId} {payment.Status}");
+            }
+
+            Console.Write("), ");
+
+            Console.Write($"{dashboard.Emails.Count} email");
+            if (dashboard.Emails.Count != 1)
+                Console.Write("s");
+
+            Console.Write(" (");
+            for (int i = 0; i < dashboard.Emails.Count; i++)
+            {
+                if (i > 0)
+                    Console.Write(", ");
+
+                Console.Write($"#{dashboard.Emails[i].OrderId}");
+            }
+
+            Console.WriteLine(")");
+
+            Console.WriteLine(
+                $"Load times: Profile={_customerDashboardService.CustomerLoadMs} ms, " +
+                $"Orders={_customerDashboardService.OrdersLoadMs} ms, " +
+                $"Payments={_customerDashboardService.PaymentsLoadMs} ms, " +
+                $"Emails={_customerDashboardService.EmailsLoadMs} ms");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Customer #3: {ex.Message}");
+        }
+
+        Console.WriteLine();
+        Console.WriteLine("========== Customer #99 Failure Test ==========");
+
+        try
+        {
+            await _customerDashboardService.LoadAsync(99, cancellationToken);
+        }
+        catch (AggregateException ex)
+        {
+            foreach (var innerException in ex.Flatten().InnerExceptions)
+            {
+                Console.WriteLine(innerException.Message);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
 
     public async Task ResetAsync(CancellationToken cancellationToken = default)
     {
