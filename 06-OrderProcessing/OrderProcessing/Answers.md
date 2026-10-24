@@ -92,6 +92,24 @@ public async Task ProcessOrderAsync(Order order, Customer customer)
 - Just use an 'await' keyword, if an exception occured, the ProcessOrderAsync will observe it so it doesn't print "Order processing finished".
 
 ## Phase 4 Questions:
-### For each of Tasks 10.1–10.4: which tool did you use, and why can't "start, then await one by one" meet the requirement?
+### 1- For each of Tasks 10.1–10.4: which tool did you use, and why can't "start, then await one by one" meet the requirement?
 - I used Task.WhenAny(), because if I started all 20 orders at the same time, some orders may finish earlier than others, so instead of waiting for the previous orders to finish, I can handle each order as soon as completed.
+
+### 2- In 10.2, when several loads fail, how do you get every exception? What does a plain await give you?
+- We can get all exceptions from Task.WhenAll using allTasks.Exception.Flatten().InnerExceptions inside the catch block.
+
+- Plain await throws one exception to the catch block, but the Task.WhenAll task stores all the exceptions.
+
+### 3- In 10.3, what happens to the losing carriers if you never cancel them?
+- If we never cancel the losing carriers, they will continue running even after we get the fastest successful quote. This wastes resources and may increase unnecessary work.
+
+### 4- Why does 10.4 A get faster with more CPU cores, while 10.4 B does not depend on the number of cores?
+- Part A gets faster with more CPU cores because the CPU can process multiple scoring calculations in parallel.
+
+- Part B does not depend directly on the number of CPU cores because sending emails is I/O-bound, which means most of the time is spent waiting.
+
+### 5- What is the difference between parallel work (10.4 A) and concurrent asynchronous work (10.1)?
+- Parallel work means executing multiple pieces of work at the same time using multiple CPU cores. It is suitable for CPU-bound tasks.
+
+- Concurrent asynchronous work means starting multiple operations that can make progress while others are waiting, without blocking a thread unnecessarily. It is suitable for I/O-bound tasks.
 

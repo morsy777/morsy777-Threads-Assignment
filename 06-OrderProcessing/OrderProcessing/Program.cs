@@ -569,9 +569,10 @@ var order = new Order
 
 var phase4Runner = new Phase4Runner();
 
-await phase4Runner.RunLiveCheckoutAsync();
-await phase4Runner.RunCustomerDashboardAsync();
-await phase4Runner.RunFastestShippingQuoteAsync();
+// await phase4Runner.RunLiveCheckoutAsync();
+// await phase4Runner.RunCustomerDashboardAsync();
+// await phase4Runner.RunFastestShippingQuoteAsync();
+await phase4Runner.RunParallelProcessingAsync();
 
 #endregion
 
