@@ -33,6 +33,7 @@ public class CouponRepository
     catch (OperationCanceledException)
     {
       Logger.Error<CouponRepository>("Coupon search was cancelled.");
+      throw;
     }
 
     return default!;

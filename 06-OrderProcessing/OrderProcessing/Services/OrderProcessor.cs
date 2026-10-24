@@ -44,8 +44,11 @@ public class OrderProcessor
       return false;
 
     bool stockReserved = false;
+    bool orderSaved = false;
     var sw = Stopwatch.StartNew();
 
+    try
+    {
     // Step1: Customer check
     Customer customer;
     sw.Restart();
@@ -184,8 +187,13 @@ public class OrderProcessor
     try
     {
       await _orderRepository.SaveAsync(order, cancellationToken);
+      orderSaved = true;
       sw.Stop();
       LogStep(order.Id, 5, "Save", "OK", sw.ElapsedMilliseconds);
+    }
+    catch (OperationCanceledException)
+    {
+      throw;
     }
     catch (Exception)
     {
@@ -242,6 +250,37 @@ public class OrderProcessor
 
     // Return true only if Status == Completed
     return order.Status == OrderStatus.Completed;
+    }
+    catch (OperationCanceledException)
+    {
+      if (!orderSaved)
+      {
+        if (!string.IsNullOrEmpty(order.TransactionId))
+        {
+          await _paymentGateway.RefundAsync(order.TransactionId, CancellationToken.None);
+        }
+
+        if (stockReserved)
+        {
+          await _inventoryService.ReleaseStockAsync(order, CancellationToken.None);
+          stockReserved = false;
+        }
+
+        order.Status = OrderStatus.Cancelled;
+        order.FailureReason = "Order processing was cancelled";
+
+        try
+        {
+          await _orderRepository.SaveAsync(order, CancellationToken.None);
+        }
+        catch (Exception saveEx)
+        {
+          Logger.Error<OrderProcessor>($"Failed to persist cancelled order #{order.Id}: {saveEx.Message}");
+        }
+      }
+
+      throw;
+    }
   }
 
   private async Task<bool> SendConfirmationWithRetryAsync(Order order, Customer customer, CancellationToken cancellationToken)
@@ -297,7 +336,7 @@ public class OrderProcessor
       Logger.Error<OrderProcessor>($"Order #{order.Id} added to email retry queue after {attempts} failed attempts.");
       Logger.Error<CheckoutService>($"Email for Order #{order.Id} queued for retry later");
     }
-    catch (Exception ex)
+    catch (Exception ex) when (ex is not OperationCanceledException)
     {
       Logger.Error<OrderProcessor>($"Failed to record email retry for Order #{order.Id}: {ex.Message}");
     }

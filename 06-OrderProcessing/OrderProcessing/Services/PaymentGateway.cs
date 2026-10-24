@@ -151,7 +151,7 @@ public class PaymentGateway : IPaymentGateway
     catch (OperationCanceledException)
     {
       Logger.Error<PaymentGateway>($"Refund for transaction '{transactionId}' was cancelled.");
-      return;
+      throw;
     }
 
     try

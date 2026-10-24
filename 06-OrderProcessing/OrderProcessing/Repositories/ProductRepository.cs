@@ -38,6 +38,7 @@ public class ProductRepository
     catch (OperationCanceledException)
     {
       Logger.Error<ProductRepository>("Product search was cancelled.");
+      throw;
     }
     return default;
   }
@@ -72,7 +73,7 @@ public class ProductRepository
       catch (OperationCanceledException)
       {
         Logger.Error<ProductRepository>("Product reserve was cancelled.");
-        return false;
+        throw;
       }
 
       if (storedProduct is null)
@@ -129,7 +130,7 @@ public class ProductRepository
       catch (OperationCanceledException)
       {
         Logger.Error<ProductRepository>("Product release was cancelled.");
-        return false;
+        throw;
       }
     }
     finally
@@ -160,7 +161,7 @@ public class ProductRepository
     catch (OperationCanceledException)
     {
       Logger.Error<ProductRepository>("Product reserve was cancelled.");
-      return false;
+      throw;
     }
 
     if (storedProduct is null)

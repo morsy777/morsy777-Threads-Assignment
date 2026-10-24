@@ -14,23 +14,17 @@ public class CustomerRepository
 
   public async Task<Customer?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
   {
-    try
-    {
-      await Task.Delay(200, cancellationToken);
-      var customers = await _jsonFileStore.ReadAsync<List<Customer>>(DataFiles.Customers, cancellationToken);
+    await Task.Delay(200, cancellationToken);
+    var customers = await _jsonFileStore.ReadAsync<List<Customer>>(DataFiles.Customers, cancellationToken);
 
-      await Task.Delay(300, cancellationToken);
-      foreach (var customer in customers)
-      {
-        cancellationToken.ThrowIfCancellationRequested();
-        if (customer.Id == id)
-          return customer;
-      }
-    }
-    catch(OperationCanceledException)
+    await Task.Delay(300, cancellationToken);
+    foreach (var customer in customers)
     {
-      Logger.Error<CustomerRepository>("Customer search was cancelled.");
+      cancellationToken.ThrowIfCancellationRequested();
+      if (customer.Id == id)
+        return customer;
     }
+
     return default;
   }
 }

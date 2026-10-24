@@ -39,7 +39,7 @@ public class OrderRepository
     catch (OperationCanceledException)
     {
       Logger.Error<OrderRepository>("Saving order was cancelled.");
-      return;
+      throw;
     }
 
     try
@@ -80,6 +80,7 @@ public class OrderRepository
     catch (OperationCanceledException)
     {
       Logger.Error<OrderRepository>("Saving order was cancelled.");
+      throw;
     }
     finally
     {
@@ -115,6 +116,7 @@ public class OrderRepository
     catch (OperationCanceledException)
     {
       Logger.Error<OrderRepository>("Loading orders was cancelled.");
+      throw;
     }
 
     return filteredOrders;
@@ -148,6 +150,7 @@ public class OrderRepository
     catch (OperationCanceledException)
     {
       Logger.Error<OrderRepository>($"Loading orders for customer #{customerId} was cancelled.");
+      throw;
     }
 
     return filteredOrders;
@@ -179,6 +182,7 @@ public class OrderRepository
     catch (OperationCanceledException)
     {
       Logger.Error<OrderRepository>($"Getting order #{orderId} was cancelled.");
+      throw;
     }
 
     return default;

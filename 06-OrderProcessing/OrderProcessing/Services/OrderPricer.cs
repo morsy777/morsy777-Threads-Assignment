@@ -78,7 +78,7 @@ public class OrderPricer
     return subtotal;
   }
 
-  private async Task<decimal> GetDiscountAsync(Order order, CancellationToken cancellationToken = default)
+  public async Task<decimal> GetDiscountAsync(Order order, CancellationToken cancellationToken = default)
   {
     var isExists = await IsOrderExistAsync(order.Id, cancellationToken);
 

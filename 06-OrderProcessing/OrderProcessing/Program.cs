@@ -179,22 +179,22 @@ using System.Diagnostics;
 
 #region Test PricingService
 
-var order = new Order
-{
-  Id = 6,
-  CustomerId = 6,
-  Items =
-  [
-    new OrderItem
-    {
-      ProductId = 5,
-      Quantity = 1,
-      UnitPrice = 0
-    }
-  ],
-  CouponCode = "FLASH20",
-  SubTotal = 0
-};
+// var order = new Order
+// {
+//   Id = 6,
+//   CustomerId = 6,
+//   Items =
+//   [
+//     new OrderItem
+//     {
+//       ProductId = 5,
+//       Quantity = 1,
+//       UnitPrice = 0
+//     }
+//   ],
+//   CouponCode = "FLASH20",
+//   SubTotal = 0
+// };
 
 // var orderPricer = new OrderPricer(new[] { 7 });
 
@@ -218,8 +218,8 @@ var order = new Order
 // await orderPricer.TestOrderPricingAsync();
 // await orderPricer.TestPricingPerformanceAsync();
 
-// If u need to test use the bellow because now helper functions is private
-// var orderPricer = new OrderPricer(new[] { 7 });
+// // If u need to test use the bellow because now helper functions is private
+// // var orderPricer = new OrderPricer(new[] { 7 });
 // await orderPricer.TestOrderPricingAsync();
 // await orderPricer.TestPricingPerformanceAsync();
 
@@ -287,41 +287,41 @@ var order = new Order
 
 #region Task 9.3 — OrderProcessor.ProcessOrderAsync
 
-// var jsonFileStore = new JsonFileStore();
-// var dataSeeder = new DataSeeder(jsonFileStore);
-// await dataSeeder.SeedAsync();
-// var initialProducts = await jsonFileStore.ReadAsync<List<Product>>(DataFiles.Products);
+var jsonFileStore = new JsonFileStore();
+var dataSeeder = new DataSeeder(jsonFileStore);
+await dataSeeder.SeedAsync();
+var initialProducts = await jsonFileStore.ReadAsync<List<Product>>(DataFiles.Products);
 
-// var incomingOrderRepository = new IncomingOrderRepository();
-// var incomingOrders = await incomingOrderRepository.GetAllAsync();
-// var orderProcessor = new OrderProcessor(
-//     new Dictionary<int, int>
-//     {
-//         [3] = 2,
-//         [17] = int.MaxValue
-//     },
-//     [5],
-//     [8],
-//     [13]
-// );
-// var processingTasks = new List<Task<bool>>(incomingOrders.Count);
+var incomingOrderRepository = new IncomingOrderRepository();
+var incomingOrders = await incomingOrderRepository.GetAllAsync();
+var orderProcessor = new OrderProcessor(
+    new Dictionary<int, int>
+    {
+        [3] = 2,
+        [17] = int.MaxValue
+    },
+    [5],
+    [8],
+    [13]
+);
+var processingTasks = new List<Task<bool>>(incomingOrders.Count);
 
-// foreach (var incomingOrder in incomingOrders)
-// {
-//   processingTasks.Add(orderProcessor.ProcessOrderAsync(incomingOrder)); 
-// }
+foreach (var incomingOrder in incomingOrders)
+{
+  processingTasks.Add(orderProcessor.ProcessOrderAsync(incomingOrder)); 
+}
 
-// foreach (var processingTask in processingTasks)
-// {
-//   await processingTask;
-// }
+foreach (var processingTask in processingTasks)
+{
+  await processingTask;
+}
 
-// Console.WriteLine();
-// Console.WriteLine($"{"Order",-8} {"Status",-14} {"Total",12}  Reason");
-// foreach (var incomingOrder in incomingOrders.OrderBy(order => order.Id))
-// {
-//   Console.WriteLine($"{incomingOrder.Id,-8} {incomingOrder.Status,-14} {incomingOrder.TotalAmount,12:F2}  {incomingOrder.FailureReason ?? "-"}");
-// }
+Console.WriteLine();
+Console.WriteLine($"{"Order",-8} {"Status",-14} {"Total",12}  Reason");
+foreach (var incomingOrder in incomingOrders.OrderBy(order => order.Id))
+{
+  Console.WriteLine($"{incomingOrder.Id,-8} {incomingOrder.Status,-14} {incomingOrder.TotalAmount,12:F2}  {incomingOrder.FailureReason ?? "-"}");
+}
 
 
 
@@ -567,13 +567,48 @@ var order = new Order
 
 #region Phase 4 — Live Checkout Progress
 
-var phase4Runner = new Phase4Runner();
+// int? cancelAfterSeconds = null;
+// bool invalidArguments = false;
 
-// await phase4Runner.RunLiveCheckoutAsync();
-// await phase4Runner.RunCustomerDashboardAsync();
-// await phase4Runner.RunFastestShippingQuoteAsync();
-await phase4Runner.RunParallelProcessingAsync();
+// for (int i = 0; i < args.Length; i++)
+// {
+//   if (args[i] != "--cancel-after" || cancelAfterSeconds.HasValue || i + 1 >= args.Length
+//       || !int.TryParse(args[i + 1], out int seconds) || seconds <= 0)
+//   {
+//     invalidArguments = true;
+//     break;
+//   }
+
+//   cancelAfterSeconds = seconds;
+//   i++;
+// }
+
+// if (invalidArguments)
+// {
+//   Console.Error.WriteLine("Usage: OrderProcessing [--cancel-after <seconds>]");
+//   return;
+// }
+
+// var phase4Runner = new Phase4Runner();
+// await phase4Runner.ResetAsync();
+
+// // await phase4Runner.RunLiveCheckoutAsync();
+// // await phase4Runner.RunCustomerDashboardAsync();
+// // await phase4Runner.RunFastestShippingQuoteAsync();
+// using var cancellationTokenSource = new CancellationTokenSource();
+// if (cancelAfterSeconds.HasValue)
+// {
+//   cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(cancelAfterSeconds.Value));
+// }
+
+// try
+// {
+//   await phase4Runner.RunAsync(cancellationTokenSource.Token);
+// }
+// catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
+// {
+//   Console.WriteLine("Order processing was cancelled.");
+// }
 
 #endregion
-
 

@@ -93,7 +93,7 @@ public class EmailService : IEmailService
     catch (OperationCanceledException)
     {
       Logger.Error<EmailService>($"Sending confirmation email for Order #{order.Id} was cancelled.");
-      return;
+      throw;
     }
 
     try

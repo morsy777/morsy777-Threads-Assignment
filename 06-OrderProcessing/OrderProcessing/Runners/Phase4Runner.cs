@@ -200,10 +200,13 @@ public class Phase4Runner
       _orderProcessor = CreateConfiguredOrderProcessor();
     }
 
-    public async Task RunLiveCheckoutAsync(CancellationToken cancellationToken = default)
+    public async Task RunLiveCheckoutAsync(CancellationToken cancellationToken = default, bool resetData = true)
     {
         // 1. Clean reset before processing
-        await ResetAsync(cancellationToken);
+        if (resetData)
+        {
+            await ResetAsync(cancellationToken);
+        }
 
         // 2. Load all 20 incoming orders
         var incomingOrders = await _incomingOrderRepository.GetAllAsync(cancellationToken);
@@ -245,6 +248,10 @@ public class Phase4Runner
         }
 
         // 5. Print final status counts matching Task 9.4
+        if (cancellationToken.IsCancellationRequested)
+        {
+            Console.WriteLine("Cancellation requested; remaining order processing was stopped.");
+        }
         PrintStatusSummary(completedResults);
     }
 
@@ -254,6 +261,14 @@ public class Phase4Runner
         try
         {
             await _orderProcessor.ProcessOrderAsync(order, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            if (order.Status != OrderStatus.Completed)
+            {
+                order.Status = OrderStatus.Cancelled;
+                order.FailureReason = "Order processing was cancelled";
+            }
         }
         catch (Exception ex)
         {
@@ -293,6 +308,7 @@ public class Phase4Runner
         int rejectedCount = 0;
         int paymentFailedCount = 0;
         int failedCount = 0;
+        int cancelledCount = 0;
 
         foreach (var res in results)
         {
@@ -310,6 +326,9 @@ public class Phase4Runner
                 case OrderStatus.Failed:
                     failedCount++;
                     break;
+                case OrderStatus.Cancelled:
+                    cancelledCount++;
+                    break;
             }
         }
 
@@ -319,6 +338,7 @@ public class Phase4Runner
         Console.WriteLine($"Rejected:       {rejectedCount}");
         Console.WriteLine($"PaymentFailed:  {paymentFailedCount}");
         Console.WriteLine($"Failed:         {failedCount}");
+        Console.WriteLine($"Cancelled:      {cancelledCount}");
         Console.WriteLine($"Total:          {results.Count}");
         Console.WriteLine("=====================================================");
     }
@@ -596,4 +616,3 @@ public class Phase4Runner
         }
       }
 }
-
