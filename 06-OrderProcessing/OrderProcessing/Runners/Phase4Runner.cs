@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using OrderProcessing.Exceptions;
 using OrderProcessing.Models;
 using OrderProcessing.Models.Enums;
 using OrderProcessing.Persistence;
@@ -22,12 +23,91 @@ public class Phase4Runner
         _dataSeeder = new DataSeeder(_jsonFileStore);
         _incomingOrderRepository = new IncomingOrderRepository();
         _orderProcessor = CreateConfiguredOrderProcessor();
-        _customerDashboardService = new CustomerDashboardService(failPaymentsForCustomerIds: new[] { 99 });
+        _customerDashboardService = new CustomerDashboardService(failPaymentsForCustomerIds: [99]);
     }
     public async Task RunAsync(CancellationToken cancellationToken = default)
     {
       await RunLiveCheckoutAsync(cancellationToken);
       await RunCustomerDashboardAsync(cancellationToken);
+      await RunFastestShippingQuoteAsync(cancellationToken);
+    }
+
+    public async Task RunFastestShippingQuoteAsync(CancellationToken cancellationToken = default)
+    {
+        Console.WriteLine();
+        Console.WriteLine("==========================================================================");
+        Console.WriteLine("          Task 10.3 — Fastest Shipping Quote (Phase 4)                    ");
+        Console.WriteLine("==========================================================================");
+
+        var shippingService = new ShippingQuoteService();
+        var incomingOrders = await _incomingOrderRepository.GetAllAsync(cancellationToken);
+
+        for (int orderId = 1; orderId <= 5; orderId++)
+        {
+            Order? order = null;
+            foreach (var o in incomingOrders)
+            {
+                if (o.Id == orderId)
+                {
+                    order = o;
+                    break;
+                }
+            }
+
+            if (order == null)
+            {
+                Console.WriteLine($"Order #{orderId} not found.");
+                continue;
+            }
+
+            Console.WriteLine($"--- Order #{order.Id} ---");
+            var quote = await shippingService.GetFastestQuoteAsync(order, cancellationToken);
+
+            string cancelledStr;
+            if (quote.CancelledCarriers.Count > 0)
+            {
+                cancelledStr = string.Join(", ", quote.CancelledCarriers);
+            }
+            else
+            {
+                cancelledStr = "None";
+            }
+
+            Console.WriteLine($"Winning carrier:    {quote.Carrier}");
+            Console.WriteLine($"Price:              ${quote.Price:F2}");
+            Console.WriteLine($"Elapsed time:       {quote.ElapsedMs} ms");
+            Console.WriteLine($"Cancelled carriers: {cancelledStr}");
+            Console.WriteLine();
+        }
+
+        Console.WriteLine("--- Order #6 (All carriers configured to fail) ---");
+        Order? order6 = null;
+        foreach (var o in incomingOrders)
+        {
+            if (o.Id == 6)
+            {
+                order6 = o;
+                break;
+            }
+        }
+
+        if (order6 == null)
+        {
+            Console.WriteLine("Order #6 not found.");
+            return;
+        }
+
+        var failingShippingService = new ShippingQuoteService(failForOrderIds: [6]);
+
+        try
+        {
+            await failingShippingService.GetFastestQuoteAsync(order6, cancellationToken);
+            Console.WriteLine("FAILED: Expected ShippingProviderUnavailableException was not thrown.");
+        }
+        catch (ShippingProviderUnavailableException ex)
+        {
+            Console.WriteLine($"Caught expected exception: {ex.GetType().Name}(\"{ex.Message}\")");
+        }
     }
 
     public async Task RunCustomerDashboardAsync(CancellationToken cancellationToken = default)

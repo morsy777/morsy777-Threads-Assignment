@@ -90,3 +90,8 @@ public async Task ProcessOrderAsync(Order order, Customer customer)
 
 ### 4- Fix the implementation. Show the console output before and after the fix.
 - Just use an 'await' keyword, if an exception occured, the ProcessOrderAsync will observe it so it doesn't print "Order processing finished".
+
+## Phase 4 Questions:
+### For each of Tasks 10.1–10.4: which tool did you use, and why can't "start, then await one by one" meet the requirement?
+- I used Task.WhenAny(), because if I started all 20 orders at the same time, some orders may finish earlier than others, so instead of waiting for the previous orders to finish, I can handle each order as soon as completed.
+
