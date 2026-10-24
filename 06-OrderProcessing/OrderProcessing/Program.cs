@@ -287,41 +287,41 @@ using System.Diagnostics;
 
 #region Task 9.3 — OrderProcessor.ProcessOrderAsync
 
-var jsonFileStore = new JsonFileStore();
-var dataSeeder = new DataSeeder(jsonFileStore);
-await dataSeeder.SeedAsync();
-var initialProducts = await jsonFileStore.ReadAsync<List<Product>>(DataFiles.Products);
+// var jsonFileStore = new JsonFileStore();
+// var dataSeeder = new DataSeeder(jsonFileStore);
+// await dataSeeder.SeedAsync();
+// var initialProducts = await jsonFileStore.ReadAsync<List<Product>>(DataFiles.Products);
 
-var incomingOrderRepository = new IncomingOrderRepository();
-var incomingOrders = await incomingOrderRepository.GetAllAsync();
-var orderProcessor = new OrderProcessor(
-    new Dictionary<int, int>
-    {
-        [3] = 2,
-        [17] = int.MaxValue
-    },
-    [5],
-    [8],
-    [13]
-);
-var processingTasks = new List<Task<bool>>(incomingOrders.Count);
+// var incomingOrderRepository = new IncomingOrderRepository();
+// var incomingOrders = await incomingOrderRepository.GetAllAsync();
+// var orderProcessor = new OrderProcessor(
+//     new Dictionary<int, int>
+//     {
+//         [3] = 2,
+//         [17] = int.MaxValue
+//     },
+//     [5],
+//     [8],
+//     [13]
+// );
+// var processingTasks = new List<Task<bool>>(incomingOrders.Count);
 
-foreach (var incomingOrder in incomingOrders)
-{
-  processingTasks.Add(orderProcessor.ProcessOrderAsync(incomingOrder)); 
-}
+// foreach (var incomingOrder in incomingOrders)
+// {
+//   processingTasks.Add(orderProcessor.ProcessOrderAsync(incomingOrder)); 
+// }
 
-foreach (var processingTask in processingTasks)
-{
-  await processingTask;
-}
+// foreach (var processingTask in processingTasks)
+// {
+//   await processingTask;
+// }
 
-Console.WriteLine();
-Console.WriteLine($"{"Order",-8} {"Status",-14} {"Total",12}  Reason");
-foreach (var incomingOrder in incomingOrders.OrderBy(order => order.Id))
-{
-  Console.WriteLine($"{incomingOrder.Id,-8} {incomingOrder.Status,-14} {incomingOrder.TotalAmount,12:F2}  {incomingOrder.FailureReason ?? "-"}");
-}
+// Console.WriteLine();
+// Console.WriteLine($"{"Order",-8} {"Status",-14} {"Total",12}  Reason");
+// foreach (var incomingOrder in incomingOrders.OrderBy(order => order.Id))
+// {
+//   Console.WriteLine($"{incomingOrder.Id,-8} {incomingOrder.Status,-14} {incomingOrder.TotalAmount,12:F2}  {incomingOrder.FailureReason ?? "-"}");
+// }
 
 
 
